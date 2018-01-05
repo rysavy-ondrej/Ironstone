@@ -1,0 +1,11 @@
+{
+  "name": "democlient",
+  "version": "1.0.0",
+  "description": "An LwM2M client written only for demonstration and experimental purposes.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ondrej Rysavy",
+  "license": "ISC"
+}
