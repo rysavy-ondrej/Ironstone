@@ -4,7 +4,7 @@ read from multiple clients. Each client provides measurement values for a number
 
 To simulate a real world situation, the NREL datatset https://data.nrel.gov/submissions/69 was used as the source of data.
 The data set contains values of power demands for 200 households meassured every 10 minutes.  
-To get more realistic data we used the data set for reference points and "computes" every single second 
+To get more realistic data we used the data set for reference points and compute every second 
 actual values of demand, voltage and current using a random generator:
 
 * Voltage is kept in the interval of 229 - 231 V.
