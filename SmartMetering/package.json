@@ -1,0 +1,22 @@
+{
+  "name": "smartmetering",
+  "version": "1.0.0",
+  "description": "An LwM2M client written only for demonstration and experimental purposes.",
+  "main": "app.js",
+  "scripts": {
+    "test": "app.js"
+  },
+  "dependencies": {
+    "async": "^2.6.0",
+    "fast-csv": "^2.4.1",
+    "lwm2m-node-lib": "*",
+    "moment": "^2.20.1",
+    "yargs": "^10.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rysavy-ondrej/Ironstone.LwM2M"
+  },
+  "author": "Ondrej Rysavy",
+  "license": "MIT"
+}
