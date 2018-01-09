@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/smartMeterClient.js",
             "args": [
-                "--file", "${workspaceFolder}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2017/01/01"
+                "--file", "${workspaceFolder}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2010/01/01"
             ]
         }
     ]

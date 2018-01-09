@@ -17,8 +17,9 @@ var fs = require('fs'),
     argv = require('yargs').argv,
     setInterval = require('timers').setInterval,
     client = require('lwm2m-node-lib').client,  
-    moment = require('moment');
-
+    moment = require('moment'),
+    schedule = require('node-schedule');
+    
 
 if (argv.file == null || argv.origin == null || argv.range == null)
 {
@@ -37,12 +38,18 @@ var sourceFile = argv.file;
 /*
  * Date and time used to shift the source data. 
  */
-var dataReferenceTime = new moment(argv.origin);
-var realReferenceTime = new moment(Date.now);
+var dataReferenceTime = new Date(argv.origin);
+var realReferenceTime = new Date(Date.now());
 
-var indexFrom = argv.range ??;
-var indexTo = argv.range ??;
+var rangeRx = /\[(\d+)-(\d+)\]/;
+var x = rangeRx.exec(argv.range);
+if (x.length != 3) {
+    console.log('Error: Invalid range specification. It should have form of [FROM-TO].');
+    process.exit(1);
+}
 
+var indexFrom =  Number(x[1]);
+var indexTo =  Number(x[2]);
 /*
  * Host or IP address of the LwM2M registration server.
  */ 
@@ -99,47 +106,70 @@ client.registry.setResource('/3/0', '1', '1.0', function (error, value) { if (er
 client.registry.setResource('/3/0', '2', serialNumber.toString(), function (error, value) { if (error) handleError(error); } );
 // create a smart meter object - SmartMeter(7000)
 client.registry.create('/7000/0', function (error, value) { if (error) handleError(error); });
+var currentPowerDemand = [];  
 
 /**
  * Called to update the current meassurement of the specific meter.
  */
 function updateValues() {
+    currentPowerDemand.forEach(function(element, index) {
+        // console.log(element);
+        function updateObjectValues(object)
+        {
+            if (object.attributes[4] == null) object.attributes[4] = '0';
+            var referenceDemand = Number(element);
+            var demand = referenceDemand + randomIntInc(-referenceDemand/10,referenceDemand/10);
 
-    // we randomize voltage and compute the rest values:
-    var volts = 230 + randomIntInc(-1,1);
-    var amperes = randomIntInc(0,2);
-    var watts = volts * amperes / 1000;
-    // Voltage
-    client.registry.setResource('/7000/0', '0', volts.toString(), function (error, value) { if (error) handleError(error); } );
-    // Ampere
-    client.registry.setResource('/7000/0', '1', amperes.toString(), function (error, value) { if (error) handleError(error); } );
-    // Watt
-    client.registry.setResource('/7000/0', '2', watts.toString(), function (error, value) { if (error) handleError(error); } );
-    
-    console.log('%s: Measurement: %sV, %s mA, %s kWh.', new Date(), volts, amperes, watts);
+            var consumption = Number(object.attributes[4]);
+            var consumptionDelta = demand / (60*60);
+
+            // we randomize voltage and compute the rest values:
+            var voltage = 230 + randomIntInc(-1,1);
+            var current = demand/voltage;
+            object.attributes[1] = voltage.toString();
+            object.attributes[2] = current.toString();
+            object.attributes[3] = demand.toString();
+            object.attributes[4] = (consumption + consumptionDelta).toString();
+
+            console.log('\n%s: Meter %s:\n* Voltage: %sV\n* Current: %s A\n* Demand: %s W\n* Total consumption: %s kWh.', new Date(), index+1, voltage, current, demand, consumption / 1000);            
+        }
+        client.registry.get('/7001/' + index.toString(), function (error, value) { 
+            if (error) {
+                client.registry.create('/7001/'+ index.toString(), function (error, value) { if (!error) updateObjectValues(value); });
+            } else {
+                updateObjectValues(value);   
+            } 
+        });
+     });
 }
 
-var currentPowerDemand = [];
+setInterval(updateValues, 1000);
 
+/**
+ * 
+ * @param {Date} time 
+ * @param {Array} values 
+ */
 function setReferenceValues(time, values) {
-    var futureTime = (time - dataReferenceTime) + realReferenceTime;
-    console.log('Scheduled value update: %s.', futureTime);
-    futureTime.timer({loop:false}, function()
-    {
-        currentPowerDemand = values;
-    });
+    var futureTime = new Date((time.valueOf() - dataReferenceTime.valueOf()) + realReferenceTime.valueOf() + 5000);
+    if ( isNaN( futureTime.valueOf() ) ) {  
+        console.log('Invalid time!');    
+    } else {
+        //console.log('Scheduled value update: %s.', futureTime);
+        schedule.scheduleJob(futureTime, function() {
+            currentPowerDemand = values;
+        });
+    }
 }
 
 csv.fromStream(stream, {headers : true, objectMode : true, delimiter : ';'})
    .on("data", function(data){
-         var time = new moment(data.time);
-         var now = moment.now;
-         var vals = Object.values(data).slice(indexFrom, indexTo);
-         console.log(vals);
+         var time = moment(data.time, 'DD/MM/YYYY HH:mm', true);
+         var vals = Object.values(data).slice(indexFrom, indexTo+1);
          setReferenceValues(time, vals);
     })
    .on("end", function(){
-         console.log("done");
+         console.log("All source data loaded.");
     });
 
 console.log('Registering: Server address: %s:%s.', serverAddress, serverPort);
