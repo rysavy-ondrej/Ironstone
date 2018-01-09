@@ -1,7 +1,6 @@
 # Simple demonstration of LwM2M
 This demonstration environment consists of a single server equipped with a simple UI to present information 
-read from multiple clients. The clients are installed at 20 measurement locations and each smart meter provide 
-information about 10 households. 
+read from multiple clients. Each client provides measurement values for a number of households. 
 
 To simulate a real world situation, the NREL datatset https://data.nrel.gov/submissions/69 was used as the source of data.
 The data set contains values of power demands for 200 households meassured every 10 minutes.  
@@ -11,6 +10,22 @@ actual values of demand, voltage and current using a random generator:
 * Voltage is kept in the interval of 229 - 231 V.
 * Demand is randomized in the interval of +- 10% of the reference value.
 * Current is computed from Demand and Voltage.
+
+## Usage
+Run the server instance:
+```
+node smartMeterServer.js --port 56840
+```
+
+Then run the required number of clients:
+```
+node smartMeterClient.js --server localhost --port 56840 --file ../Data/residential.csv --range [1-10] --origin 2010/01/01
+node smartMeterClient.js --server localhost --port 56840 --file ../Data/residential.csv --range [11-20] --origin 2010/01/01
+node smartMeterClient.js --server localhost --port 56840 --file ../Data/residential.csv --range [21-40] --origin 2010/01/01
+```
+In this example `residental.csv` dataset is used. First and second client each provide values for 10 households. The third
+client provide values for nex 20 households.
+
 
 ## Collect Server
 The server collects values from registered clients and vizualized them in a simple UI.
