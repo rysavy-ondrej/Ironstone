@@ -112,35 +112,43 @@ var currentPowerDemand = [];
  * Called to update the current meassurement of the specific meter.
  */
 function updateValues() {
+    var voltage = 230 + randomIntInc(-1,1);
+    var currentSum = 0;
+    var demandSum = 0;
     currentPowerDemand.forEach(function(element, index) {
-        // console.log(element);
         function updateObjectValues(object)
         {
-            if (object.attributes[4] == null) object.attributes[4] = '0';
             var referenceDemand = Number(element);
             var demand = referenceDemand + randomIntInc(-referenceDemand/10,referenceDemand/10);
-
-            var consumption = Number(object.attributes[4]);
-            var consumptionDelta = demand / (60*60);
-
-            // we randomize voltage and compute the rest values:
-            var voltage = 230 + randomIntInc(-1,1);
+            var consumption = Number(object.attributes[4] != null ? object.attributes[4] : 0) + demand / (60*60);
             var current = demand/voltage;
+            currentSum += current;
+            demandSum += demand;
             object.attributes[1] = voltage.toString();
             object.attributes[2] = current.toString();
             object.attributes[3] = demand.toString();
-            object.attributes[4] = (consumption + consumptionDelta).toString();
+            object.attributes[4] = consumption.toString();
 
-            console.log('\n%s: Meter %s:\n* Voltage: %sV\n* Current: %s A\n* Demand: %s W\n* Total consumption: %s kWh.', new Date(), index+1, voltage, current, demand, consumption / 1000);            
+            console.log('\n%s: Meter %s:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', new Date(), index+1, voltage, current, demand, consumption / 1000);            
         }
         client.registry.get('/7001/' + index.toString(), function (error, value) { 
             if (error) {
                 client.registry.create('/7001/'+ index.toString(), function (error, value) { if (!error) updateObjectValues(value); });
             } else {
                 updateObjectValues(value);   
-            } 
-        });
+            }});
+            
      });
+
+    client.registry.get('/7000/0' , function (error, object) { 
+        if (!error) {
+            object.attributes[5] =  voltage.toString();
+            object.attributes[6] =  currentSum.toString();
+            object.attributes[7] =  demandSum.toString();
+            object.attributes[8] =  Number(object.attributes[8] != null ? object.attributes[8] : 0) + demandSum / (60*60);
+            console.log('\n%s: Location:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', new Date(), object.attributes[5], object.attributes[6], object.attributes[7] , Number(object.attributes[8]) / 1000);            
+        } 
+    });
 }
 
 setInterval(updateValues, 1000);
@@ -151,7 +159,7 @@ setInterval(updateValues, 1000);
  * @param {Array} values 
  */
 function setReferenceValues(time, values) {
-    var futureTime = new Date((time.valueOf() - dataReferenceTime.valueOf()) + realReferenceTime.valueOf() + 5000);
+    var futureTime = new Date((time.valueOf() - dataReferenceTime.valueOf()) + realReferenceTime.valueOf() + 2000);
     if ( isNaN( futureTime.valueOf() ) ) {  
         console.log('Invalid time!');    
     } else {
