@@ -7,11 +7,19 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/smartMeterClient.js",
-            "args": [
-                "--file", "${workspaceFolder}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2010/01/01"
-            ]
+            "name": "Launch Server",
+            "program": "${workspaceRoot}/smartMeterServer.js"
         }
+        /*
+        ,        
+        {            
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Client",
+            "program": "${workspaceRoot}/smartMeterClient.js",
+            "args": [
+                "--file", "${workspaceRoot}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2010/01/01"
+            ]
+        }*/
     ]
 }

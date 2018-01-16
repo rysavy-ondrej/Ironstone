@@ -27,6 +27,13 @@ if (argv.file == null || argv.origin == null || argv.range == null)
     console.log('Usage: node smartMeterClient --file data.csv --range [1-10] --origin 2017/01/01');
     process.exit(1);
 }
+
+
+var location = argv.loc;
+if (location == null) {
+    location = "loc" + randomIntInc(0, 10000).toString();
+}
+
 /*
  * An array of column indixes to read household data from.
  */
@@ -159,12 +166,13 @@ setInterval(updateValues, 1000);
  * @param {Array} values 
  */
 function setReferenceValues(time, values) {
-    var futureTime = new Date((time.valueOf() - dataReferenceTime.valueOf()) + realReferenceTime.valueOf() + 2000);
+    var futureTime = new Date((time.valueOf() - dataReferenceTime.valueOf()) + realReferenceTime.valueOf() + 5000);
     if ( isNaN( futureTime.valueOf() ) ) {  
         console.log('Invalid time!');    
     } else {
-        //console.log('Scheduled value update: %s.', futureTime);
+        // console.log('Scheduled value update: %s.', futureTime);
         schedule.scheduleJob(futureTime, function() {
+            console.log("Update values from the source dataset.");
             currentPowerDemand = values;
         });
     }
@@ -180,8 +188,8 @@ csv.fromStream(stream, {headers : true, objectMode : true, delimiter : ';'})
          console.log("All source data loaded.");
     });
 
-console.log('Registering: Server address: %s:%s.', serverAddress, serverPort);
-client.register(serverAddress, serverPort, '', 'smart-meter', function (error, deviceInfo) {
+console.log('Registering "%s" to: %s:%s.', location, serverAddress, serverPort);
+client.register(serverAddress, serverPort, '', location, function (error, deviceInfo) {
     if (error) {
         handleError(error);
     } else {

@@ -1,18 +1,17 @@
 var lwm2m = require('lwm2m-node-lib'),
     timers = require('timers'),
-   async = require('async');
+    async = require('async');
 
-   var config = {};
+var config = {};
 config.server = {
-    port: 56840,                         // Port where the server will be listening
-    lifetimeCheckInterval: 1000,        // Minimum interval between lifetime checks in ms
+    port: 5684,                     // Port where the server will be listening
+    lifetimeCheckInterval: 1000,    // Minimum interval between lifetime checks in ms
     udpWindow: 100,
     defaultType: 'Device',
     logLevel: 'FATAL',
     ipProtocol: 'udp4',
     serverProtocol: 'udp4',
-    formats: [
-        {
+    formats: [{
             name: 'application-vnd-oma-lwm2m/text',
             value: 1541
         },
@@ -32,12 +31,17 @@ config.server = {
     writeFormat: 'application-vnd-oma-lwm2m/text'
 };
 
+function precisionRound(number, precision) {
+    var factor = Math.pow(10, precision);
+    return Math.round(number * factor) / factor;
+  }
+
 function handleError(error) {
-    console.log('\nError: %s\n', error);    
+    console.log('\nError: %s\n', error);
 }
 
 function handleResult(message) {
-    return function(error) {
+    return function (error) {
         if (error) {
             handleError(error);
         } else {
@@ -46,24 +50,9 @@ function handleResult(message) {
     };
 }
 
-/**
- * Reads values from the specified smart meter and prints them out. 
- * 
- * @param {String} endpoint     The name of the endpoint to read valuse from.
- */ 
-function readValuesFromSmartMeter(endpoint)
-{
-    console.log('\nReading values from device \n');    
-}
-  
 function registrationHandler(endpoint, lifetime, version, binding, payload, callback) {
     console.log('\nDevice registration:\n----------------------------\n');
     console.log('Endpoint name: %s\nLifetime: %s\nBinding: %s', endpoint, lifetime, binding);
-
-    if (endpoint == 'smart-meter') {
-        timers.setInterval(readValuesFromSmartMeter, 5000, endpoint);
-    }
-
     callback();
 }
 
@@ -89,14 +78,40 @@ function start() {
 
 function stop() {
     if (globalServerInfo) {
-        lwm2mServer.stop(globalServerInfo, handleResult('COAP Server stopped.'));
+        lwm2m.server.stop(globalServerInfo, handleResult('COAP Server stopped.'));
     } else {
         console.log('\nNo server was listening\n');
     }
 }
 
-// executue server
+
+function updateDeviceList()
+{
+    function readValue(device, resource) {
+        lwm2m.server.read(device.id, "7000","0", resource.id, function (error, value) {
+            if (error) {
+                handleError(error);
+            } else {
+                console.log(' [%s] -> %s: %s %s', device.id, resource.name, precisionRound(Number(value), 3), resource.units);
+            }    
+        });
+    }
+
+    // start monitoring modules
+    var devices = lwm2m.server.listDevices(function (error, deviceList) {
+        if (error) {
+            //handleError(error);
+        } else {
+            console.log(new Date().toDateString());
+            deviceList.forEach(function(element) {
+                readValue(element, { id : "5", name : "voltage", units : "V" } );                                
+                readValue(element, { id : "6", name : "current", units : "A" } );                                
+                readValue(element, { id : "7", name : "demand", units : "W" } );                                
+                readValue(element, { id : "8", name : "consumption", units : "Wh" } ); 
+            });
+        }
+    });                
+}
+
 start();
-
-// start monitoring modules
-
+setInterval(updateDeviceList, 10000);
