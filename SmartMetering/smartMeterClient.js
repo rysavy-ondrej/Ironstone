@@ -21,6 +21,12 @@ var fs = require('fs'),
     schedule = require('node-schedule');
     
 
+function precisionRound(number, precision) {
+    var factor = Math.pow(10, precision);
+    return Math.round(number * factor) / factor;
+}
+    
+
 if (argv.file == null || argv.origin == null || argv.range == null)
 {
     console.log('Error: Some of the mandatory arguments was missing.');
@@ -122,6 +128,7 @@ function updateValues() {
     var voltage = 230 + randomIntInc(-1,1);
     var currentSum = 0;
     var demandSum = 0;
+    console.log('\n%s:', new Date());
     currentPowerDemand.forEach(function(element, index) {
         function updateObjectValues(object)
         {
@@ -136,7 +143,7 @@ function updateValues() {
             object.attributes[3] = demand.toString();
             object.attributes[4] = consumption.toString();
 
-            console.log('\n%s: Meter %s:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', new Date(), index+1, voltage, current, demand, consumption / 1000);            
+            console.log('Meter %s:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', index+1, precisionRound(voltage, 3), precisionRound(current, 3), precisionRound(demand, 3), precisionRound(consumption / 1000, 3));            
         }
         client.registry.get('/7001/' + index.toString(), function (error, value) { 
             if (error) {
@@ -153,7 +160,7 @@ function updateValues() {
             object.attributes[6] =  currentSum.toString();
             object.attributes[7] =  demandSum.toString();
             object.attributes[8] =  Number(object.attributes[8] != null ? object.attributes[8] : 0) + demandSum / (60*60);
-            console.log('\n%s: Location:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', new Date(), object.attributes[5], object.attributes[6], object.attributes[7] , Number(object.attributes[8]) / 1000);            
+            console.log('Location:\tVoltage: %s V\tCurrent: %s A\tDemand: %s W\tConsumption: %s kWh', precisionRound(voltage, 3), precisionRound(currentSum, 3), precisionRound(demandSum, 3) , precisionRound(Number(object.attributes[8]) / 1000, 3));            
         } 
     });
 }

@@ -90,7 +90,7 @@ function updateDeviceList()
     function readValue(device, resource) {
         lwm2m.server.read(device.id, "7000","0", resource.id, function (error, value) {
             if (error) {
-                handleError(error);
+                //handleError(error);
             } else {
                 console.log(' [%s] -> %s: %s %s', device.id, resource.name, precisionRound(Number(value), 3), resource.units);
             }    
@@ -102,7 +102,10 @@ function updateDeviceList()
         if (error) {
             //handleError(error);
         } else {
-            console.log(new Date().toDateString());
+            console.log('%s', new Date().toLocaleString('en-US'));
+            if (deviceList.length === 0) {
+                console.log('No device connected.');
+            }
             deviceList.forEach(function(element) {
                 readValue(element, { id : "5", name : "voltage", units : "V" } );                                
                 readValue(element, { id : "6", name : "current", units : "A" } );                                
