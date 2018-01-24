@@ -1,0 +1,66 @@
+digraph {
+	rankdir=LR;
+	node [shape=plaintext];
+	subgraph cluster__coap {
+		label="Coap";
+		graph[style=dotted];
+
+		coap__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+			<TR><TD PORT="version_pos">0</TD><TD PORT="version_size">2b</TD><TD>b2</TD><TD PORT="version_type">version</TD></TR>
+			<TR><TD PORT="type_pos">0:2</TD><TD PORT="type_size">2b</TD><TD>b2→CoapMessageType</TD><TD PORT="type_type">type</TD></TR>
+			<TR><TD PORT="tkl_pos">0:4</TD><TD PORT="tkl_size">4b</TD><TD>b4</TD><TD PORT="tkl_type">tkl</TD></TR>
+			<TR><TD PORT="code_pos">1</TD><TD PORT="code_size">1</TD><TD>u1→CoapCode</TD><TD PORT="code_type">code</TD></TR>
+			<TR><TD PORT="message_id_pos">2</TD><TD PORT="message_id_size">2</TD><TD>u2be</TD><TD PORT="message_id_type">message_id</TD></TR>
+			<TR><TD PORT="token_pos">4</TD><TD PORT="token_size">tkl</TD><TD></TD><TD PORT="token_type">token</TD></TR>
+			<TR><TD PORT="options_pos">...</TD><TD PORT="options_size">...</TD><TD>Option</TD><TD PORT="options_type">options</TD></TR>
+			<TR><TD COLSPAN="4" PORT="options__repeat">repeat until  ((_.is_payload_marker) || (_io.eof?)) </TD></TR>
+			<TR><TD PORT="body_pos">...</TD><TD PORT="body_size">⇲</TD><TD></TD><TD PORT="body_type">body</TD></TR>
+		</TABLE>>];
+		subgraph cluster__option {
+			label="Coap::Option";
+			graph[style=dotted];
+
+			option__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="opt_delta_pos">0</TD><TD PORT="opt_delta_size">4b</TD><TD>b4</TD><TD PORT="opt_delta_type">opt_delta</TD></TR>
+				<TR><TD PORT="opt_len_pos">0:4</TD><TD PORT="opt_len_size">4b</TD><TD>b4</TD><TD PORT="opt_len_type">opt_len</TD></TR>
+				<TR><TD PORT="opt_delta_1_pos">1</TD><TD PORT="opt_delta_1_size">1</TD><TD>u1</TD><TD PORT="opt_delta_1_type">opt_delta_1</TD></TR>
+				<TR><TD PORT="opt_delta_2_pos">2</TD><TD PORT="opt_delta_2_size">2</TD><TD>u2be</TD><TD PORT="opt_delta_2_type">opt_delta_2</TD></TR>
+				<TR><TD PORT="opt_len_1_pos">4</TD><TD PORT="opt_len_1_size">1</TD><TD>u1</TD><TD PORT="opt_len_1_type">opt_len_1</TD></TR>
+				<TR><TD PORT="opt_len_2_pos">5</TD><TD PORT="opt_len_2_size">2</TD><TD>u2be</TD><TD PORT="opt_len_2_type">opt_len_2</TD></TR>
+				<TR><TD PORT="value_pos">7</TD><TD PORT="value_size">length</TD><TD></TD><TD PORT="value_type">value</TD></TR>
+			</TABLE>>];
+			option__inst__length [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">id</TD><TD BGCOLOR="#E0FFE0">value</TD></TR>
+				<TR><TD>length</TD><TD>(opt_len == 13 ? opt_len_1 : (opt_len == 14 ? opt_len_2 : (opt_len == 15 ? 0 : opt_len)))</TD></TR>
+			</TABLE>>];
+			option__inst__delta [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">id</TD><TD BGCOLOR="#E0FFE0">value</TD></TR>
+				<TR><TD>delta</TD><TD>(opt_delta == 13 ? opt_delta_1 : (opt_delta == 14 ? opt_delta_2 : (opt_delta == 15 ? 0 : opt_delta)))</TD></TR>
+			</TABLE>>];
+			option__inst__is_payload_marker [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">id</TD><TD BGCOLOR="#E0FFE0">value</TD></TR>
+				<TR><TD>is_payload_marker</TD><TD> ((opt_len == 15) &amp;&amp; (opt_delta == 15)) </TD></TR>
+			</TABLE>>];
+		}
+	}
+	coap__seq:tkl_type -> coap__seq:token_size [color="#404040"];
+	coap__seq:options_type -> option__seq [style=bold];
+	option__inst__is_payload_marker:is_payload_marker_type -> coap__seq:options__repeat [color="#404040"];
+	option__inst__length:length_type -> option__seq:value_size [color="#404040"];
+	option__seq:opt_len_type -> option__inst__length [color="#404040"];
+	option__seq:opt_len_1_type -> option__inst__length [color="#404040"];
+	option__seq:opt_len_type -> option__inst__length [color="#404040"];
+	option__seq:opt_len_2_type -> option__inst__length [color="#404040"];
+	option__seq:opt_len_type -> option__inst__length [color="#404040"];
+	option__seq:opt_len_type -> option__inst__length [color="#404040"];
+	option__seq:opt_delta_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_delta_1_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_delta_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_delta_2_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_delta_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_delta_type -> option__inst__delta [color="#404040"];
+	option__seq:opt_len_type -> option__inst__is_payload_marker [color="#404040"];
+	option__seq:opt_delta_type -> option__inst__is_payload_marker [color="#404040"];
+}

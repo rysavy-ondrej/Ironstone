@@ -1,0 +1,67 @@
+digraph {
+	rankdir=LR;
+	node [shape=plaintext];
+	subgraph cluster__lwm2m_tlv {
+		label="Lwm2mTlv";
+		graph[style=dotted];
+
+		lwm2m_tlv__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+			<TR><TD PORT="type_pos">0</TD><TD PORT="type_size">...</TD><TD>TlvType</TD><TD PORT="type_type">type</TD></TR>
+			<TR><TD PORT="identifier_pos">...</TD><TD PORT="identifier_size">...</TD><TD>TlvIdentifier</TD><TD PORT="identifier_type">identifier</TD></TR>
+			<TR><TD PORT="length_pos">...</TD><TD PORT="length_size">...</TD><TD>TlvLength</TD><TD PORT="length_type">length</TD></TR>
+			<TR><TD PORT="value_pos">...</TD><TD PORT="value_size">length.value</TD><TD></TD><TD PORT="value_type">value</TD></TR>
+		</TABLE>>];
+		subgraph cluster__tlv_identifier {
+			label="Lwm2mTlv::TlvIdentifier";
+			graph[style=dotted];
+
+			tlv_identifier__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="tlv_id_1_pos">0</TD><TD PORT="tlv_id_1_size">1</TD><TD>u1</TD><TD PORT="tlv_id_1_type">tlv_id_1</TD></TR>
+				<TR><TD PORT="tlv_id_2_pos">1</TD><TD PORT="tlv_id_2_size">2</TD><TD>u2be</TD><TD PORT="tlv_id_2_type">tlv_id_2</TD></TR>
+			</TABLE>>];
+			tlv_identifier__inst__value [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">id</TD><TD BGCOLOR="#E0FFE0">value</TD></TR>
+				<TR><TD>value</TD><TD>(tlv_id_1 | tlv_id_2)</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__tlv_length {
+			label="Lwm2mTlv::TlvLength";
+			graph[style=dotted];
+
+			tlv_length__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="tlv_len_1_pos">0</TD><TD PORT="tlv_len_1_size">1</TD><TD>u1</TD><TD PORT="tlv_len_1_type">tlv_len_1</TD></TR>
+				<TR><TD PORT="tlv_len_2_pos">1</TD><TD PORT="tlv_len_2_size">16b</TD><TD>b16</TD><TD PORT="tlv_len_2_type">tlv_len_2</TD></TR>
+				<TR><TD PORT="tlv_len_3_pos">3</TD><TD PORT="tlv_len_3_size">24b</TD><TD>b24</TD><TD PORT="tlv_len_3_type">tlv_len_3</TD></TR>
+			</TABLE>>];
+			tlv_length__inst__value [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">id</TD><TD BGCOLOR="#E0FFE0">value</TD></TR>
+				<TR><TD>value</TD><TD>(((_parent.type.value_length | tlv_len_1) | tlv_len_2) | tlv_len_3)</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__tlv_type {
+			label="Lwm2mTlv::TlvType";
+			graph[style=dotted];
+
+			tlv_type__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="identifier_type_pos">0</TD><TD PORT="identifier_type_size">2b</TD><TD>b2→Lwm2mTlvIdentifierType</TD><TD PORT="identifier_type_type">identifier_type</TD></TR>
+				<TR><TD PORT="identifier_wide_length_pos">0:2</TD><TD PORT="identifier_wide_length_size">1b</TD><TD>BitsType1</TD><TD PORT="identifier_wide_length_type">identifier_wide_length</TD></TR>
+				<TR><TD PORT="length_type_pos">0:3</TD><TD PORT="length_type_size">2b</TD><TD>b2</TD><TD PORT="length_type_type">length_type</TD></TR>
+				<TR><TD PORT="value_length_pos">0:5</TD><TD PORT="value_length_size">3b</TD><TD>b3</TD><TD PORT="value_length_type">value_length</TD></TR>
+			</TABLE>>];
+		}
+	}
+	lwm2m_tlv__seq:type_type -> tlv_type__seq [style=bold];
+	lwm2m_tlv__seq:identifier_type -> tlv_identifier__seq [style=bold];
+	lwm2m_tlv__seq:length_type -> tlv_length__seq [style=bold];
+	tlv_length__inst__value:value_type -> lwm2m_tlv__seq:value_size [color="#404040"];
+	tlv_identifier__seq:tlv_id_1_type -> tlv_identifier__inst__value [color="#404040"];
+	tlv_identifier__seq:tlv_id_2_type -> tlv_identifier__inst__value [color="#404040"];
+	tlv_type__seq:value_length_type -> tlv_length__inst__value [color="#404040"];
+	tlv_length__seq:tlv_len_1_type -> tlv_length__inst__value [color="#404040"];
+	tlv_length__seq:tlv_len_2_type -> tlv_length__inst__value [color="#404040"];
+	tlv_length__seq:tlv_len_3_type -> tlv_length__inst__value [color="#404040"];
+}
