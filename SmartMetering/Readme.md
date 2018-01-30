@@ -68,3 +68,8 @@ Also each meter is also equipped with power switch that can be controlled.
 | 5   | Power Switch     | E   | Single    | Mandatory | Boolean | -     | Turn on/off the meter device and thus electricity for the consumer. |
 
 In addition to metering, the smart meter provides operational information via status resources. 
+
+
+
+## TODO:
+Implement a simple web based UI (https://code.visualstudio.com/docs/nodejs/angular-tutorial) for both client and server sides.

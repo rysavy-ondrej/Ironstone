@@ -4,22 +4,23 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        /*
         {
             "type": "node",
             "request": "launch",
             "name": "Launch Server",
             "program": "${workspaceRoot}/smartMeterServer.js"
         }
-        /*
-        ,        
+        */
+               
         {            
             "type": "node",
             "request": "launch",
             "name": "Launch Client",
             "program": "${workspaceRoot}/smartMeterClient.js",
-            "args": [
+            "args": [ "start", 
                 "--file", "${workspaceRoot}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2010/01/01"
             ]
-        }*/
+        }
     ]
 }
