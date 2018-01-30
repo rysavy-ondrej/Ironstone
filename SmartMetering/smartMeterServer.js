@@ -75,7 +75,7 @@ function updateDeviceList()
             if (error) {
                 handleError(error);
             } else {
-                console.log(' ├─[%s]─ %s = %s %s', device.id, resource.name, precisionRound(Number(value), 3), resource.units);
+                console.log(' ├─[%s]─ %s = %s %s', device.id, resource.name, Misc.precisionRound(Number(value), 3), resource.units);
             }    
         });
     }

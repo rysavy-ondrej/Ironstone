@@ -124,6 +124,7 @@ var SmartMeterClient = /** @class */ (function () {
             var indexTo = Number(x[2]);
             __this.loadSourceFile(sourceFile, { from: indexFrom, to: indexTo });
             __this.initialize();
+            __this.updateRegistration();
             // update value every second
             setInterval(function () { __this.updateValues(); }, 1000);
             // re-register every 10 minutes
@@ -153,13 +154,14 @@ var SmartMeterClient = /** @class */ (function () {
                 handleError(error); });
         };
         this.updateRegistration = function () {
-            client.register(_this.config.serverAddress, _this.config.serverPort, _this.config.endpointName, function (error, deviceInfo) {
+            var __this = _this;
+            client.register(_this.config.serverAddress, _this.config.serverPort, '', _this.config.endpointName, function (error, deviceInfo) {
                 if (error) {
-                    misc_1.Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', this.config.serverAddress, this.config.serverPort, this.config.endpointName, error));
+                    misc_1.Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, error));
                     handleError(error);
                 }
                 else {
-                    misc_1.Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', this.config.serverAddress, this.config.serverPort, this.config.endpointName, deviceInfo.location));
+                    misc_1.Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, deviceInfo.location));
                 }
             });
         };

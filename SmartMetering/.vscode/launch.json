@@ -18,7 +18,7 @@
             "request": "launch",
             "name": "Launch Client",
             "program": "${workspaceRoot}/smartMeterClient.js",
-            "args": [ "start", 
+            "args": [ "--port", "56480",  
                 "--file", "${workspaceRoot}/../Data/residential.csv", "--range", "[1-10]", "--origin", "2010/01/01"
             ]
         }

@@ -144,6 +144,7 @@ class SmartMeterClient {
 
         __this.loadSourceFile(sourceFile, {from: indexFrom, to:indexTo});
         __this.initialize();
+        __this.updateRegistration();
         
         // update value every second
         setInterval(function () { __this.updateValues(); }, 1000);
@@ -171,12 +172,13 @@ class SmartMeterClient {
     }
 
     private updateRegistration = () => {
-        client.register(this.config.serverAddress, this.config.serverPort, this.config.endpointName, function (error, deviceInfo) {
+        let __this = this;
+        client.register(this.config.serverAddress, this.config.serverPort, '', this.config.endpointName, function (error, deviceInfo) {
             if (error) {
-                Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', this.config.serverAddress, this.config.serverPort, this.config.endpointName, error));
+                Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, error));
                 handleError(error);
             } else {
-                Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', this.config.serverAddress, this.config.serverPort, this.config.endpointName,  deviceInfo.location));
+                Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName,  deviceInfo.location));
             }
         });
     }
