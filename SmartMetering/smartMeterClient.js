@@ -59,7 +59,7 @@ var SmartMeterClient = /** @class */ (function () {
             });
         };
         this.setReferenceValues = function (time, values) {
-            var __this = _this;
+            var $ = _this;
             var futureTime = new Date(time.valueOf() + _this.timeshift + 5000);
             if (isNaN(futureTime.valueOf())) {
                 misc_1.Misc.logEvent(format('[ERROR: msg="Invalid time value", value=%s]', time));
@@ -67,7 +67,7 @@ var SmartMeterClient = /** @class */ (function () {
             else {
                 schedule.scheduleJob(futureTime, function () {
                     misc_1.Misc.logEvent("[UPDATE: msg='Power demand values updated from dataset.']");
-                    __this.currentPowerDemand = values.map(Number);
+                    $.currentPowerDemand = values.map(Number);
                 });
             }
         };
@@ -75,7 +75,7 @@ var SmartMeterClient = /** @class */ (function () {
          * Starts the client.
          */
         this.start = function (args) {
-            var __this = _this;
+            var $ = _this;
             _this.config =
                 {
                     lifetime: '85671',
@@ -122,13 +122,13 @@ var SmartMeterClient = /** @class */ (function () {
             }
             var indexFrom = Number(x[1]);
             var indexTo = Number(x[2]);
-            __this.loadSourceFile(sourceFile, { from: indexFrom, to: indexTo });
-            __this.initialize();
-            __this.updateRegistration();
+            $.loadSourceFile(sourceFile, { from: indexFrom, to: indexTo });
+            $.initialize();
+            $.updateRegistration();
             // update value every second
-            setInterval(function () { __this.updateValues(); }, 1000);
+            setInterval(function () { $.updateValues(); }, 1000);
             // re-register every 10 minutes
-            setInterval(function () { __this.updateRegistration(); }, 1000 * 60 * 10);
+            setInterval(function () { $.updateRegistration(); }, 1000 * 60 * 10);
         };
         /**
          * Initializes M2M client and creates necessary objects and their resources.
@@ -154,14 +154,14 @@ var SmartMeterClient = /** @class */ (function () {
                 handleError(error); });
         };
         this.updateRegistration = function () {
-            var __this = _this;
+            var $ = _this;
             client.register(_this.config.serverAddress, _this.config.serverPort, '', _this.config.endpointName, function (error, deviceInfo) {
                 if (error) {
-                    misc_1.Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, error));
+                    misc_1.Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', $.config.serverAddress, $.config.serverPort, $.config.endpointName, error));
                     handleError(error);
                 }
                 else {
-                    misc_1.Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, deviceInfo.location));
+                    misc_1.Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', $.config.serverAddress, $.config.serverPort, $.config.endpointName, deviceInfo.location));
                 }
             });
         };

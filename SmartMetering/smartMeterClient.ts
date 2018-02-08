@@ -59,7 +59,7 @@ class SmartMeterClient {
     private loadSourceFile = (path:string, columns: {from:number, to:number}) => {
         Misc.logEvent(format('[READING: File=%s]', path));
         var stream = createReadStream(path);
-        let __this = this;
+        const __this = this;
         fast_csv.fromStream(stream, {headers : true, objectMode : true, delimiter : ';'})
             .on("data", function(data : any){
                     let time = moment(data.time, 'DD/MM/YYYY HH:mm', true);
@@ -73,14 +73,14 @@ class SmartMeterClient {
     }
 
     private setReferenceValues = (time : moment.Moment, values : string[]) => {
-        let __this = this;
+        let $ = this;
         var futureTime = new Date(time.valueOf() + this.timeshift + 5000);
         if ( isNaN( futureTime.valueOf() ) ) {  
             Misc.logEvent(format('[ERROR: msg="Invalid time value", value=%s]', time));    
         } else {
             schedule.scheduleJob(futureTime, function() {
                 Misc.logEvent("[UPDATE: msg='Power demand values updated from dataset.']");
-                __this.currentPowerDemand = values.map(Number);
+                $.currentPowerDemand = values.map(Number);
             });
         }
     }
@@ -89,7 +89,7 @@ class SmartMeterClient {
      * Starts the client.
      */
     public start = (args:yargs.Arguments) => {
-        let __this = this;
+        const $ = this;
 
         this.config =
         {
@@ -142,14 +142,14 @@ class SmartMeterClient {
         var indexFrom =  Number(x[1]);
         var indexTo =  Number(x[2]);
 
-        __this.loadSourceFile(sourceFile, {from: indexFrom, to:indexTo});
-        __this.initialize();
-        __this.updateRegistration();
+        $.loadSourceFile(sourceFile, {from: indexFrom, to:indexTo});
+        $.initialize();
+        $.updateRegistration();
         
         // update value every second
-        setInterval(function () { __this.updateValues(); }, 1000);
+        setInterval(function () { $.updateValues(); }, 1000);
         // re-register every 10 minutes
-        setInterval(function() { __this.updateRegistration(); }, 1000*60*10);
+        setInterval(function() { $.updateRegistration(); }, 1000*60*10);
     }
 
     /**
@@ -172,13 +172,13 @@ class SmartMeterClient {
     }
 
     private updateRegistration = () => {
-        let __this = this;
+        let $ = this;
         client.register(this.config.serverAddress, this.config.serverPort, '', this.config.endpointName, function (error, deviceInfo) {
             if (error) {
-                Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName, error));
+                Misc.logEvent(format('[REGISTER-ERROR: Server=%s:%s, Endpoint=%s, Error=%s]', $.config.serverAddress, $.config.serverPort, $.config.endpointName, error));
                 handleError(error);
             } else {
-                Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', __this.config.serverAddress, __this.config.serverPort, __this.config.endpointName,  deviceInfo.location));
+                Misc.logEvent(format('[REGISTERED: Server=%s:%s, Endpoint=%s, Location=%s]', $.config.serverAddress, $.config.serverPort, $.config.endpointName,  deviceInfo.location));
             }
         });
     }
