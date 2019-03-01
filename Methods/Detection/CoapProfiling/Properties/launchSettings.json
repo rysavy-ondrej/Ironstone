@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CoapProfiling": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\Captures\\coap-lwm2m\\20190228-smartmeter.csv"
+    }
+  }
+}
