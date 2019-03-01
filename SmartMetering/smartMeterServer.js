@@ -16,21 +16,19 @@ var lwm2m = require('lwm2m-node-lib'),
     async = require('async');
     ServerConfig = require('./config').ServerConfig;
     Misc = require('./misc').Misc;
+
+
+        
 // create server configuration
 var config = {};
 config.server = new ServerConfig();
-config.server.port = (argv.port != null) ? argv.port : '56480';                   // Port where the server will be listening
-config.server.updateInterval = (argv.interval != null) ? argv.interval : 30,   // The number of seconds between read requests for the measured values.
-
-function handleError(error) {
-    Misc.logEvent(error);
-    process.exit(1);
-}
+config.server.port = (argv.port != null) ? argv.port : '56480';                     // Port where the server will be listening
+config.server.updateInterval = (argv.interval != null) ? argv.interval : 30;        // The number of seconds between read requests for the measured values.
 
 function handleResult(message) {
     return function (error) {
         if (error) {
-            handleError(error);
+            Misc.logEvent(util.format('ERROR: %s', error));
         } else {
             Misc.logEvent(message);
         }
@@ -60,6 +58,7 @@ function start() {
         setHandlers
     ], handleResult(util.format("[SERVER-STARTED: Port=%s]", config.server.port))); 
 }
+
 function stop() {
     if (globalServerInfo) {
         lwm2m.server.stop(globalServerInfo, handleResult(util.format('[SERVER-STOPPED]')));
@@ -73,7 +72,8 @@ function updateDeviceList()
     function readValue(device, resource) {
         lwm2m.server.read(device.id, "7000","0", resource.id, function (error, value) {
             if (error) {
-                handleError(error);
+                Misc.logEvent('ERROR: Cannot read values: %s', error);
+                
             } else {
                 console.log(' ├─[%s]─ %s = %s %s', device.id, resource.name, Misc.precisionRound(Number(value), 3), resource.units);
             }    
@@ -83,7 +83,7 @@ function updateDeviceList()
     // start monitoring modules
     var devices = lwm2m.server.listDevices(function (error, deviceList) {
         if (error) {
-            handleError(error);
+            Misc.logEvent('ERROR: Cannot get a list of devices: %s', error);
         } else {
             
             if (deviceList.length === 0) {
