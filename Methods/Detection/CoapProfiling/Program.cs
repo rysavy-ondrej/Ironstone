@@ -1,5 +1,7 @@
 ﻿using Accord.Statistics.Distributions.DensityKernels;
+using Accord.Statistics.Distributions.Fitting;
 using Accord.Statistics.Distributions.Multivariate;
+using Accord.Statistics.Testing;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
 using System;
@@ -79,10 +81,40 @@ namespace CoapProfiling
 
     class Program
     {
+
+        static void Test()
+        {
+            double[][] observations =
+            {
+                new double[] { 1, 2 },
+                new double[] { 1, 2 },
+                new double[] { 2, 2 },
+                new double[] { 1, 2 }
+            };
+
+            // Create a multivariate Gaussian for 2 dimensions
+            var normal = new MultivariateNormalDistribution(2);
+            // Specify a regularization constant in the fitting options
+            NormalOptions options = new NormalOptions() { Regularization = regularization };
+
+            // Fit the distribution to the data
+            normal.Fit(observations, options);
+
+            // Check distribution parameters
+            double[] mean = normal.Mean;     // { 1, 2 }
+            double[] var = normal.Variance; // { 4.9E-324, 4.9E-324 } (almost machine zero)
+
+            var pdf1 = normal.ProbabilityDensityFunction(new double[] { 1,2 }) * regularization;
+            var pdf2 = normal.ProbabilityDensityFunction(new double[] { 1.25,2 }) * regularization;
+        }
+
+
         static double windowSize = 10;
-        static int windowCount = 20000;
+        static int learningWindowCount = 200;
+        static double regularization = 1e-10;
         static void Main(string[] args)
         {
+            Test();
             if (args.Length != 1)
             {
                 Console.WriteLine("Usage: CoapProfiling <input-file.csv>");
@@ -99,37 +131,91 @@ namespace CoapProfiling
                 var items = records.Select(r => new CoapFeatures { StartMsec = r.StartMsec, SourceHost = $"{r.L3Ipv4Src}.{r.L4PortSrc}", CoapTarget = $"{ r.CoapCodeAlias}({r.CoapTypeAlias})[{r.CoapUriHost}{r.CoapUriPath}]" });
                 var startMs = items.First().StartMsec;
                 // split data into windows
-                var windows = items.GroupBy(x => (int)Math.Floor((x.StartMsec - startMs) / windowSize)).Take(windowCount).ToArray();
-                var samples = windows.Select(g => GetWindowSamples(g.ToArray())).ToArray();
+                var windows = items.GroupBy(x => (int)Math.Floor((x.StartMsec - startMs) / windowSize)).ToLookup(x => x.Key < learningWindowCount); 
+
+                var learningSamples = windows[true].Select(g => GetWindowSamples(g.ToArray())).ToArray();
 
                 // get keys and assign indices
-                var keySet = new HashSet<string>(samples.SelectMany(d => d.Keys));
-                var columns = keySet.Select((x, i) => (Name:x,Index:i)).ToDictionary(x => x.Name);
-                var observations = GetObservations(columns, samples).ToArray();
+                var columnNames = learningSamples.SelectMany(d => d.Keys).ToHashSet().Select((x, i) => (Name: x, Index: i)).ToDictionary(x => x.Name);
 
-                IDensityKernel kernel = new EpanechnikovKernel(dimension: columns.Count);
+                IDensityKernel kernel = new EpanechnikovKernel(dimension: columnNames.Count);
+                var observations = GetObservations(columnNames, learningSamples).ToArray();
+                // var profileMED = new MultivariateEmpiricalDistribution(kernel, observations);
+                var profileMED  = MultivariateNormalDistribution.Estimate(observations, new NormalOptions() { Regularization = regularization });
 
-                // Create a multivariate Empirical distribution from the observations
-                var dist = new MultivariateEmpiricalDistribution(kernel, observations);
+                var mean = profileMED.Mean;     
+                var median = profileMED.Median; 
+                var variance = profileMED.Variance;  
+                var covariance = profileMED.Covariance; 
 
 
-                // Common measures
-                var mean = dist.Mean;     // { 3.71, 2.00 }
-                var median = dist.Median; // { 3.71, 2.00 }
-                var variance = dist.Variance;  // { 7.23, 5.00 } (diagonal from cov)
-                var covariance = dist.Covariance; // { { 7.23, 0.83 }, { 0.83, 5.00 } }
+                var testSamples = windows[false].Select(g => GetWindowSamples(g.ToArray())).ToArray();
+                var testObservations = GetObservations(columnNames, learningSamples).Select((x,i) => (sample: x, window: i));
+
+                Console.WriteLine($"-Test Window------------------------------------------------------");
+                foreach (var testObservation in testObservations)
+                {
+                    var pdf = profileMED.LogProbabilityDensityFunction(testObservation.sample);
+                    Console.WriteLine($"Window:{testObservation.window}, Value: {pdf}");
+                }
+                Console.WriteLine($"-Random------------------------------------------------------");
+                var random = new Random();
+                for(int i = 0; i < 50; i++)
+                {
+                    var sample = new double[columnNames.Count + 1];
+                    // random samples:
+                    for (int j = 0; j< columnNames.Count; j++)
+                    {
+                        sample[j] = random.Next(100);
+                    }
+                    var pdf = profileMED.LogProbabilityDensityFunction(sample);
+                    Console.WriteLine($"Random, Value: {pdf}");
+                }
+                Console.WriteLine($"-Injected-----------------------------------------------------");
+                foreach (var testObservation in testObservations)
+                {
+                    var sample = new double[columnNames.Count + 1];
+                    var inj = 0;
+                    // random samples:
+                    for (int j = 0; j <= columnNames.Count; j++)
+                    {
+                        if ((random.Next(100) == 50))
+                        {
+                            sample[j] = testObservation.sample[j] > 0 ? testObservation.sample[j] * 2 : mean[j];
+                            inj++;
+                        }
+                        else
+                        {
+                            sample[j] = testObservation.sample[j];
+                        }
+                    }
+                    var pdf = profileMED.LogProbabilityDensityFunction(sample);
+                    Console.WriteLine($"Injected: {inj}, Value: {pdf}");
+                }
             }
         }
 
+        /// <summary>
+        /// Get the observation matrix. 
+        /// </summary>
+        /// <param name="columns">Collection of columns.</param>
+        /// <param name="samples">Collection of samples used to initiate observation matrix.</param>
+        /// <returns>
+        /// A collection of rows each containing a single observation within the window. 
+        /// Each row has <paramref name="columns.Count"/>+1 items. The last item aggregates all values from 
+        /// <paramref name="samples"/> which column name is not in <paramref name="columns"/> dictionary.
+        /// </returns>
         private static IEnumerable<double[]> GetObservations(Dictionary<string, (string Name, int Index)> columns, IDictionary<string, double>[] samples)
         {
             foreach(var sample in samples)
             {
-                var row = new double[columns.Count];
+                var row = new double[columns.Count+1];
                 foreach(var val in sample)
                 {
-                    var idx = columns[val.Key].Index;
-                    row[idx] = val.Value;
+                    if (columns.TryGetValue(val.Key, out var xx))
+                        row[xx.Index] = val.Value;
+                    else
+                        row[columns.Count] += val.Value; 
                 }
                 yield return row;
             }
