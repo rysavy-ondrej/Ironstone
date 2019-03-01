@@ -110,7 +110,7 @@ namespace CoapProfiling
 
 
         static double windowSize = 10;
-        static int learningWindowCount = 200;
+        static int learningWindowCount = 100;
         static double regularization = 1e-10;
         static void Main(string[] args)
         {
@@ -138,11 +138,13 @@ namespace CoapProfiling
                 // get keys and assign indices
                 var columnNames = learningSamples.SelectMany(d => d.Keys).ToHashSet().Select((x, i) => (Name: x, Index: i)).ToDictionary(x => x.Name);
 
-                IDensityKernel kernel = new EpanechnikovKernel(dimension: columnNames.Count);
+                IDensityKernel kernel = new UniformKernel(regularization);
                 var observations = GetObservations(columnNames, learningSamples).ToArray();
-                // var profileMED = new MultivariateEmpiricalDistribution(kernel, observations);
-                var profileMED  = MultivariateNormalDistribution.Estimate(observations, new NormalOptions() { Regularization = regularization });
 
+                // This does not work, why?
+                // var profileMED = new MultivariateEmpiricalDistribution(kernel, observations);
+
+                var profileMED  = MultivariateNormalDistribution.Estimate(observations, new NormalOptions() { Regularization = regularization });
                 var mean = profileMED.Mean;     
                 var median = profileMED.Median; 
                 var variance = profileMED.Variance;  
@@ -150,7 +152,7 @@ namespace CoapProfiling
 
 
                 var testSamples = windows[false].Select(g => GetWindowSamples(g.ToArray())).ToArray();
-                var testObservations = GetObservations(columnNames, learningSamples).Select((x,i) => (sample: x, window: i));
+                var testObservations = GetObservations(columnNames, testSamples).Select((x,i) => (sample: x, window: i));
 
                 Console.WriteLine($"-Test Window------------------------------------------------------");
                 foreach (var testObservation in testObservations)
