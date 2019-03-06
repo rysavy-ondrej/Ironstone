@@ -20,13 +20,13 @@ def print_csv(packet):
     else:
         uri_host = ''
     try:
-        print('{},{},{},{},{},{},{},{},{}'.format(packet.sniff_timestamp,
-            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport,
+        print('{},{},{},{},{},{},{},{},{},{}'.format(packet.sniff_timestamp,
+            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport, packet.udp.length,
             packet.coap.code,packet.coap.type,
             uri_host, packet.coap.opt_uri_path_recon))
     except AttributeError as e: 
-        print('{},{},{},{},{},{},{},{},'.format(packet.sniff_timestamp,
-            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport,
+        print('{},{},{},{},{},{},{},{},{},'.format(packet.sniff_timestamp,
+            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport, packet.udp.length,
             packet.coap.code,packet.coap.type,
             uri_host))
         pass
@@ -55,7 +55,7 @@ def main(argv):
         sys.exit(2)
 
     capture = pyshark.FileCapture(inputfile)
-    print('Start Msec, L3 Ipv4 Src, L4 Port Src, L3 Ipv4 Dst, L4 Port Dst, Coap Code, Coap Type, Coap Uri Host, Coap Uri Path')
+    print('Start Msec, L3 Ipv4 Src, L4 Port Src, L3 Ipv4 Dst, L4 Port Dst, L4 Paylen, Coap Code, Coap Type, Coap Uri Host, Coap Uri Path')
     for packet in capture:
         print_csv(packet)
 
