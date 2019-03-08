@@ -50,18 +50,17 @@ CoAP uses UDP data transfer. UDP communication channel can be used for sending m
 
 ## Method
 
-The method is based on monitoring operations manipulating with Coap Resources. In general, CoAP resources can have one of the following characteristics:
+The method is based on monitoring operations manipulating with CoAP Resources. In general, CoAP resources can have one of the following characteristics:
 
 * NORMAL - normal resources are static resources, usually accessed by GET, PUT or POST. 
 * PERIODIC - represents resources that are regular events. Often these resources are observed. The observation pattern is also regular.                                                                              
 * EVENT - represents an irregular events. The resources can be observed but the observation event are aperiodic.
 
 The proposed method monitors CoAP communication and learns patterns of resource usages to create a system-wide profile. 
-Regardless of a type of the resource the pattern is defined by a statistical model considering number of messages and their size 
-representing the CoAP operation. 
-
-The profile is always computed for the specific window size, default is 60s. The profile can be computed at the different level of granularity. 
-CoAP packets are aggregated into flows. For example, the group key represented by `(ip.src ip.dst)` pair is used for L3 level flows. 
+The pattern has form of a statistical model. The model relates a resource operation to a number of messages and a total number of bytes.
+The profile is always computed for the specific window size; default is 60s. The profile can be computed at the different level of granularity.
+For example, the group key represented by `(ip.src ip.dst)` pair is used for L3 level flows.
+Other levels are given in the table bellow. 
 Each flow is used as an input for fitting the corresponding model. For each  
 `(coap.code, coap.type, coap.uri_path)` tuple distinct model is created. The model uses 
 `cflow.packets` and `cflow.octets` as samples to fit the probabilistic distribution. Thus each model
