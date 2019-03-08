@@ -50,26 +50,32 @@ CoAP uses UDP data transfer. UDP communication channel can be used for sending m
 
 ## Method
 
-The method is based on monitoring Coap Resources.
-In general, CoAP resources can have one of the following characteristics:
+The method is based on monitoring operations with Coap Resources. In general, CoAP resources can have one of the following characteristics:
 
-* NORMAL - normal resources are static resources, usually accessed by GET, PUT or POST 
+* NORMAL - normal resources are static resources, usually accessed by GET, PUT or POST. 
 * PERIODIC - represents resources that are regular events. Often these resources are observed. The observation pattern is also regular.                                                                              
-* EVENT - represents an irregular events. The resources can be observed.
+* EVENT - represents an irregular events. The resources can be observed but the observation event are aperiodic.
 
-Method monitors CoAP communication and learns patterns to create a system-wide profile. 
+The proposed method monitors CoAP communication and learns patterns of resource usages to create a system-wide profile. 
+Regardless of a type of the resource the pattern is defined by a statistical model considering number of messages and their size 
+representing the CoAP operation. 
 
-The profile can be computed at the different level of granularity:
-## Ip Flow Level
+The profile is always computed for the specific window size, default is 60s. The profile can be computed at the different level of granularity. 
+CoAP packets are aggregated into flows. For example, the group key represented by `(ip.src ip.dst)` pair is used for L3 level flows. 
+Each flow is used as an input for fitting the corresponding model. For each  
+`(coap.code, coap.type, coap.uri_path)` tuple distinct model is created. The model uses 
+`cflow.packets` and `cflow.octets` as samples to fit the probabilistic distribution. Thus each model
+is represented by two Probabilistic Density Functions. 
 
-```
-Key: ip.src ip.dst coap.code coap.type
-Group by: coap.uri_path
-Value: sum(udp.length)
-```
-## Udp Flow Level
 
-## Coap Flow Level
+| Flow     |  Key |
+| -------- | --------------------------------------------------------------- |
+| L3 Ip    | (ip.src, ip.dst)                                                 |
+| L4 Udp   | (ip.src, udp.srcport, ip.dst, dst.dstport)                       |
+| L3 Coap  | (ip.src, udp.srcport, ip.dst, dst.dstport, coap.mid, coap.token) |
+
+## Evaluation 
+TODO: Describe available datasets and their parameters.
 
 ## References
 * CoAP Implementation Guidance https://tools.ietf.org/id/draft-ietf-lwig-coap-05.html#rfc.section.2.3
