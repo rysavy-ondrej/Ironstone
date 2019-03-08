@@ -26,7 +26,6 @@ dotnet Ironstone.Analyzers.CoapProfiling.dll Learn-Profile -InputFile=SampleData
 
 ### Classification 
 
-Once we have a profile created from the representative samples of CoAP communication, we can use this profile to classify the CoAP flows. The profile is stored in the binary file, which the tool loads and uses to discriminate the input CSV file.
 Once we have a profile created from the representative samples of CoAP communication, we can use this profile to classify the CoAP flows. The profile is stored in the binary file, which the tool loads and uses to discriminate the input CSV file.  To use the tool in the classification mode, execute it with `Test-Capture` command.
 
 ```
