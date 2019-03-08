@@ -3,15 +3,8 @@
 import sys, getopt
 import pyshark  # pip install pyshark
 
-def print_info(packet):
-    try:
-        print('{}: {} {}.{} --> {}.{} [coap code={} type={} uri={}:{}{}]'.format(packet.sniff_timestamp, 
-        packet.transport_layer, packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport,packet.coap.code,packet.coap.type,
-        packet.ip.dst,packet.udp.dstport,packet.coap.opt_uri_path_recon))
-    except:
-        pass
-
 def print_csv(packet):
+    
     if int(packet.coap.code) > 0:
         if int(packet.coap.code) < 32:
             uri_host = '{}:{}'.format(packet.ip.dst,packet.udp.dstport)
@@ -19,17 +12,26 @@ def print_csv(packet):
             uri_host = '{}:{}'.format(packet.ip.src,packet.udp.srcport)
     else:
         uri_host = ''
+    
+    # print(packet.coap.field_names)
+
     try:
-        print('{},{},{},{},{},{},{},{},{},{}'.format(packet.sniff_timestamp,
-            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport, packet.udp.length,
-            packet.coap.code,packet.coap.type,
-            uri_host, packet.coap.opt_uri_path_recon))
+        uri_path = packet.coap.opt_uri_path
     except AttributeError as e: 
-        print('{},{},{},{},{},{},{},{},{},'.format(packet.sniff_timestamp,
-            packet.ip.src,packet.udp.srcport,packet.ip.dst,packet.udp.dstport, packet.udp.length,
-            packet.coap.code,packet.coap.type,
-            uri_host))
-        pass
+        uri_path = 'x'
+
+    print('{},{},{},{},{},{},{},{},{},{}'.format(
+            packet.sniff_timestamp,
+            packet.ip.src,
+            packet.udp.srcport,
+            packet.ip.dst,
+            packet.udp.dstport,
+            packet.udp.length,
+            packet.coap.code,
+            packet.coap.type,
+            uri_host, 
+            uri_path))
+
 
 def main(argv):
     inputfile = ''

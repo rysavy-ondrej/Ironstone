@@ -1,8 +1,19 @@
 {
   "profiles": {
     "CoapProfiling": {
+      "commandName": "Project"
+    },
+    "LearnProfile": {
       "commandName": "Project",
-      "commandLineArgs": "D:\\Captures\\coap-lwm2m\\20190228-smartmeter.csv"
+      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-simple.csv -WriteTo=SampleData\\coap-simple.profile"
+    },
+    "PrintProfile": {
+      "commandName": "Project",
+      "commandLineArgs": "Print-Profile -InputFile=SampleData\\coap-simple.profile"
+    },
+    "TestCapture": {
+      "commandName": "Project",
+      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-simple.csv -ProfileFile=SampleData\\coap-simple.profile"
     }
   }
 }

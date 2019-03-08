@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CoapProfiling
+namespace Ironstone.Analyzers.CoapProfiling
 {
     public static class EnumerableExtensions
     {

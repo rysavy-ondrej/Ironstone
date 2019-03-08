@@ -3,13 +3,24 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
+    <AssemblyName>Ironstone.Analyzers.CoapProfiling</AssemblyName>
+    <RootNamespace>Ironstone.Analyzers.CoapProfiling</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Accord" Version="3.8.2-alpha" />
     <PackageReference Include="Accord.Statistics" Version="3.8.2-alpha" />
+    <PackageReference Include="AutoMapper" Version="8.0.0" />
     <PackageReference Include="ConsoleTableExt" Version="2.0.2" />
     <PackageReference Include="CsvHelper" Version="12.1.2" />
+    <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
+    <PackageReference Include="NLog" Version="4.6.0-rc1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="SampleData\coap-simple.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
