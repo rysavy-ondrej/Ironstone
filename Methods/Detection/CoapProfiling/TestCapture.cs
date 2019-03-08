@@ -94,5 +94,36 @@ namespace Ironstone.Analyzers.CoapProfiling
                 .ExportAndWriteLine();
             return (normal, anomaly);
         }
+
+        void PrintEvaluation(int truePositive, int trueNegative, int falsePositive, int falseNegative)
+        {
+            var contingencyTable = new DataTable();
+            contingencyTable.Columns.Add("", typeof(string));
+            contingencyTable.Columns.Add("Normal Predicted", typeof(int));
+            contingencyTable.Columns.Add("Anomaly Predicted", typeof(int));
+            contingencyTable.Rows.Add("Normal Actual", truePositive, falseNegative);
+            contingencyTable.Rows.Add("Anomaly Actual", falsePositive, trueNegative);
+            Console.WriteLine("Confusion Matrix:");
+            ConsoleTableBuilder.From(contingencyTable)
+                .WithFormat(ConsoleTableBuilderFormat.MarkDown)
+                .ExportAndWriteLine();
+
+            // compute precision
+            var precision = truePositive / (double)(truePositive + falsePositive);
+            var recall = truePositive / (double)(truePositive + falseNegative);
+            var accuracy = (truePositive + trueNegative) / (double)(truePositive + trueNegative + falsePositive + falseNegative);
+            var fmeasure = 2 * (precision * recall) / (precision + recall);
+            var measuresTable = new DataTable();
+            measuresTable.Columns.Add("Metric", typeof(string));
+            measuresTable.Columns.Add("Value", typeof(double));
+            measuresTable.Rows.Add("Precision", precision);
+            measuresTable.Rows.Add("Recall", recall);
+            measuresTable.Rows.Add("Accuracy", accuracy);
+            measuresTable.Rows.Add("F-measure", fmeasure);
+            Console.WriteLine("Measures:");
+            ConsoleTableBuilder.From(measuresTable)
+                .WithFormat(ConsoleTableBuilderFormat.MarkDown)
+                .ExportAndWriteLine();
+        }
     }
 }

@@ -7,15 +7,17 @@ using System.Runtime.Serialization.Formatters.Binary;
 using ConsoleTableExt;
 using CsvHelper;
 using Microsoft.Extensions.CommandLineUtils;
+using ShellProgressBar;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-    internal class LearnProfile
+    internal class LearnProfile : IDisposable
     {
         internal static readonly double DefaultWindowSize = 60.0;
 
         public LearnProfile()
         {
+
         }
 
         public void Configuration(CommandLineApplication command)
@@ -40,12 +42,28 @@ namespace Ironstone.Analyzers.CoapProfiling
                 double windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : DefaultWindowSize;
                 if (readOption.HasValue() && writeOption.HasValue())
                 {
+                    CreateProgressBar();
                     var profile = LoadAndCompute(readOption.Value(), windowSize);
                     StoreProfile(profile, writeOption.Value());
                     return 0;
                 }
                 throw new CommandParsingException(command, $"Missing required arguments: {readOption.ShortName}, {writeOption.ShortName}.");
             });
+        }
+
+        ProgressBar progressBar; 
+        private void CreateProgressBar()
+        {
+            progressBar = new ProgressBar(0, String.Empty, new ProgressBarOptions
+            {
+                ProgressCharacter = '─',
+            });
+        }
+        private void ResetProgressBar(int count, string message)
+        {
+            progressBar.Tick(0);
+            progressBar.MaxTicks = count;
+            progressBar.Message = message;
         }
 
         private void StoreProfile(CoapProfile<CoapStatisticalModel> profile, string outputFile)
@@ -62,6 +80,7 @@ namespace Ironstone.Analyzers.CoapProfiling
         {
             var profile = new CoapProfile<CoapStatisticalModel>(windowSize);
 
+            ResetProgressBar(0, $"Loading source packets...");
             using (var reader = new StreamReader(inputFile))
             using (var csv = new CsvReader(reader))
             {
@@ -70,16 +89,21 @@ namespace Ironstone.Analyzers.CoapProfiling
                 csv.Configuration.HeaderValidated = null;
                 var packets = csv.GetRecords<CoapPacketRecord>().ToList();
                 var startTime = packets.First().TimeEpoch;
-                var packetGroups = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize));
-                foreach (var group in packetGroups)
+                var packetBins = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize)).ToList();
+
+                ResetProgressBar(packetBins.Count(), $"Processing bins...");
+                foreach (var group in packetBins)
                 {
+                    progressBar.Tick();
                     var flows = CoapFlowRecord.CollectFlows(group, p => $"{p.IpSrc}.{p.SrcPort}->{p.IpDst}{p.DstPort}");
                     ComputeProfile(profile, flows);
                 }
             }
-            profile.Commit();
+            ResetProgressBar(profile.Count, $"Fitting models...");
+            profile.Commit(() => progressBar.Tick());
             return profile;
         }
+
 
         private static void ComputeProfile(CoapProfile<CoapStatisticalModel> profile, IEnumerable<CoapFlowRecord> flows)
         {
@@ -93,6 +117,11 @@ namespace Ironstone.Analyzers.CoapProfiling
                 }
                 model.Samples.Add(new double[] { flow.FlowPackets, flow.FlowOctets });
             }
-        }      
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)progressBar).Dispose();
+        }
     }
 }

@@ -109,11 +109,12 @@ namespace Ironstone.Analyzers.CoapProfiling
             writer.WriteLine(sb.ToString());
         }
 
-        internal void Commit()
+        internal void Commit(Action progressCallback = null)
         {
             foreach (var model in profileDictionary)
             {
                 model.Value.Fit();
+                progressCallback?.Invoke();
             }
         }
     }

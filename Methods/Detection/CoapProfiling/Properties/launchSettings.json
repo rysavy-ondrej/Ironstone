@@ -1,11 +1,8 @@
 {
   "profiles": {
-    "CoapProfiling": {
-      "commandName": "Project"
-    },
     "LearnProfile": {
       "commandName": "Project",
-      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-simple.csv -WriteTo=SampleData\\coap-simple.profile"
+      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-learn.csv -WriteTo=SampleData\\coap-simple.profile"
     },
     "PrintProfile": {
       "commandName": "Project",
@@ -13,7 +10,7 @@
     },
     "TestCapture": {
       "commandName": "Project",
-      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-simple.csv -ProfileFile=SampleData\\coap-simple.profile"
+      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-simple.profile"
     }
   }
 }

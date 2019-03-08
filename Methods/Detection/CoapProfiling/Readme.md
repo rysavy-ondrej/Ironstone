@@ -1,15 +1,40 @@
 ﻿# CoAP resource usage profiling and anomaly detection
+Ironstone.Analyzers.CoapProfiling is a dotnet core console application that implements a method for classification of CoAP network flows. 
+The classification is based on the identification of communication patterns using a statistical model.  
+Currently, the application requires a csv input file containing decoded PCAP packets. This input file can be created using `tshark` as follows:
+
+```
+tshark -T fields -e frame.time_epoch -e ip.src -e ip.dst -e udp.srcport -e udp.dstport -e udp.length -e coap.code -e coap.type -e coap.mid -e coap.token -e coap.opt.uri_path_recon -E header=y -E separator=, -r <INPUT>  > <OUTPUT-CSV-FILE>
+```
+
+## Usage
+
+The application provides learning and classification modes. Learning  mode serves for creating a profile from 
+provided CoAP communication. Classification mode applies previously created profile to identify known communication.
+
+### Learn the profile
 
 
-## TODO:
-* get some sample data from: https://opensourceforu.com/2016/09/coap-get-started-with-iot-protocols/
-* Compute information about the whole dataset - num. of packets, num. of flows, num of profiles, etc.
-* Compute "stability" - compare distributions for different number of samples
-* Add other methods not based on probability, e.g., SVM, decision trees, ...
-* Evaluate on other datasets
+```
+dotnet Ironstone.Analyzers.CoapProfiling.dll Learn-Profile -InputFile=SampleData\coap-learn.csv -WriteTo=SampleData\coap.profile
+```
+
+### Print the profile
+
+```
+dotnet Ironstone.Analyzers.CoapProfiling.dll Print-Profile -InputFile=SampleData\coap.profile
+```
+
+### Classify the communication 
+
+```
+dotnet Ironstone.Analyzers.CoapProfiling.dll Test-Capture -ProfileFile=SampleData\coap.profile -InputFile=SampleData\coap-test.csv
+```
 
 ## CoAP communication patterns
-The simplest communication patterns is request and immediate response:
+
+The simplest CoAP communication pattern is a request followed by the immediate response:
+
 ```
 Client              Server
   |                  |
@@ -21,7 +46,11 @@ Client              Server
   |  2.05 Content    |
   |<-----------------+
 ```
-More complicated pattern is when the response is delayed:
+
+More complicated pattern is when the data response is delayed. In this case the server response with ACK 
+message. The message containing data is send later with a new Message Id. The `token` value is used to identify all 
+messages of this transaction.
+
 ```
 Client              Server
   |                  |
@@ -43,7 +72,9 @@ Client              Server
   |   ACK [0x23bb]   |
   +----------------->|
 ```
+
 ## UDP Flows
+
 CoAP uses UDP data transfer. UDP communication channel can be used for sending multiple CoAP messages. 
 
 
@@ -61,8 +92,7 @@ The pattern has form of a statistical model. The model relates a resource operat
 The profile is always computed for the specific window size; default is 60s. The profile can be computed at the different level of granularity.
 For example, the group key represented by `(ip.src ip.dst)` pair is used for L3 level flows.
 Other levels are given in the table bellow. 
-Each flow is used as an input for fitting the corresponding model. For each  
-`(coap.code, coap.type, coap.uri_path)` tuple distinct model is created. The model uses 
+Each flow is used as an input for fitting the corresponding model. For each  `(coap.code, coap.type, coap.uri_path)` tuple a distinct model is created. The model uses 
 `cflow.packets` and `cflow.octets` as samples to fit the probabilistic distribution. Thus each model
 is represented by two Probabilistic Density Functions. 
 
@@ -75,6 +105,15 @@ is represented by two Probabilistic Density Functions.
 
 ## Evaluation 
 TODO: Describe available datasets and their parameters.
+
+
+## TODO:
+* get some sample data from: https://opensourceforu.com/2016/09/coap-get-started-with-iot-protocols/
+* Compute information about the whole dataset - num. of packets, num. of flows, num of profiles, etc.
+* Compute "stability" - compare distributions for different number of samples
+* Add other methods not based on probability, e.g., SVM, decision trees, ...
+* Evaluate on other datasets
+
 
 ## References
 * CoAP Implementation Guidance https://tools.ietf.org/id/draft-ietf-lwig-coap-05.html#rfc.section.2.3
