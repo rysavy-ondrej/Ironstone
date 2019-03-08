@@ -22,3 +22,13 @@ Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/TemporaryGeneratedFile_5
 Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/TemporaryGeneratedFile_E7A71F73-0F8D-4B9B-B56E-8E70B10BC5D3.cs
 Methods/Detection/CoapProfiling/obj/project.assets.json
 *.user
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.deps.json
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.dll
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.pdb
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.runtimeconfig.dev.json
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.runtimeconfig.json
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-learn.csv
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-test.csv
+Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.dll
+Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/Ironstone.Analyzers.CoapProfiling.pdb
+Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/project.razor.json
