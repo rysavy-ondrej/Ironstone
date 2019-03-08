@@ -2,7 +2,7 @@
 
 *Ironstone.Analyzers.CoapProfiling* is a dotnet core console application that implements a method for classification of CoAP network flows. 
 The classification is based on the identification of communication patterns using a statistical model.  
-Currently, the application requires a csv input file containing decoded PCAP packets. This input file can be created using `tshark` as follows:
+Currently, the application requires a CSV input file containing decoded PCAP packets. This input file can be created using `tshark` as follows:
 
 ```
 tshark -T fields -e frame.time_epoch -e ip.src -e ip.dst -e udp.srcport -e udp.dstport -e udp.length -e coap.code -e coap.type -e coap.mid -e coap.token -e coap.opt.uri_path_recon -E header=y -E separator=, -Y "coap && !icmp" -r <INPUT>  > <OUTPUT-CSV-FILE>
