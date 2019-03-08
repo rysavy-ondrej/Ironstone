@@ -50,7 +50,7 @@ CoAP uses UDP data transfer. UDP communication channel can be used for sending m
 
 ## Method
 
-The method is based on monitoring operations with Coap Resources. In general, CoAP resources can have one of the following characteristics:
+The method is based on monitoring operations manipulating with Coap Resources. In general, CoAP resources can have one of the following characteristics:
 
 * NORMAL - normal resources are static resources, usually accessed by GET, PUT or POST. 
 * PERIODIC - represents resources that are regular events. Often these resources are observed. The observation pattern is also regular.                                                                              
