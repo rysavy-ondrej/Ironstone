@@ -144,8 +144,8 @@ Each flow is used as an input for fitting the corresponding model. For each  `(c
 is represented by two Probabilistic Density Functions. 
 
 
-| Flow     |  Key |
-| -------- | --------------------------------------------------------------- |
+| Flow     |  Key                                                             |
+| -------- | ---------------------------------------------------------------- |
 | L3 Ip    | (ip.src, ip.dst)                                                 |
 | L4 Udp   | (ip.src, udp.srcport, ip.dst, dst.dstport)                       |
 | L3 Coap  | (ip.src, udp.srcport, ip.dst, dst.dstport, coap.mid, coap.token) |
@@ -156,6 +156,7 @@ TODO: Describe available datasets and their parameters.
 
 
 ## TODO:
+* provide also aggregated model, which allows to identify flooding attacks: sum all packets from all clients,to a single resource within a window. 
 * get some sample data from: https://opensourceforu.com/2016/09/coap-get-started-with-iot-protocols/
 * Compute information about the whole dataset - num. of packets, num. of flows, num of profiles, etc.
 * Compute "stability" - compare distributions for different number of samples
