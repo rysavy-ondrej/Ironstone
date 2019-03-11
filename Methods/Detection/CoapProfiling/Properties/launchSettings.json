@@ -10,7 +10,19 @@
     },
     "TestCapture": {
       "commandName": "Project",
-      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-simple.profile"
+      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-simple.profile > SampleData\\coap-simple.test"
+    },
+    "LearnProfile-Aggregate": {
+      "commandName": "Project",
+      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-learn.csv -WriteTo=SampleData\\coap-aggregated.profile -Aggregate=srcport,dstport"
+    },
+    "TestCapture-Aggregate": {
+      "commandName": "Project",
+      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-aggregated.profile -Aggregate=srcport,dstport > SampleData\\coap-aggregated.test"
+    },
+    "PrintProfile-Aggregate": {
+      "commandName": "Project",
+      "commandLineArgs": "Print-Profile -InputFile SampleData\\coap-aggregated.profile"
     }
   }
 }
