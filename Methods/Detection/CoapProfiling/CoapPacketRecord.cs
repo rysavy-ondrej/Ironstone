@@ -1,10 +1,13 @@
 ﻿using CsvHelper.Configuration.Attributes;
+using System;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-
     public class CoapResourceAccess
     {
+        [Flags]
+        public enum Fields { Unknown = 0, CoapCode = 1, CoapType = 2, CoapUriPath = 4 }
+
         public int CoapCode { get; set; }
         public int CoapType { get; set; }
         public string CoapUriPath { get; set; }
@@ -19,6 +22,17 @@ namespace Ironstone.Analyzers.CoapProfiling
         public override string ToString()
         {
             return $"{CoapCodeString}[{CoapTypeString}]:{CoapUriPath}";
+        }
+
+        public static Func<CoapPacketRecord, string> GetModelKeyFunc(Fields modelKey)
+        {
+            return p =>
+            {
+                var cra = new CoapResourceAccess(p.CoapCode, p.CoapType, p.CoapUriPath);
+                return  $"{(modelKey.HasFlag(Fields.CoapCode) ? "*" : cra.CoapCodeString)}"
+                      + $"[{(modelKey.HasFlag(Fields.CoapType) ? "*" : cra.CoapTypeString)}]"
+                      + $"{(modelKey.HasFlag(Fields.CoapUriPath) ? "*" : cra.CoapUriPath)}";
+            };
         }
 
         public string CoapCodeString
@@ -61,6 +75,9 @@ namespace Ironstone.Analyzers.CoapProfiling
     }
     public class CoapPacketRecord
     {
+        [Flags]
+        public enum Fields { Unknown = 0, FrameTimeEpoch = 1, IpSrc = 2, IpDst = 4, UdpSrcPort = 8, UdpDstPort = 16, UdpLength = 32, CoapCode = 64, CoapType = 128, CoapMid = 256, CoapToken = 512, CoapOptUriPathRecon = 1024, CoapUriHost = 2048 }
+
         [Name("frame.time_epoch")]
         public double TimeEpoch { get; set; }
 
@@ -91,7 +108,6 @@ namespace Ironstone.Analyzers.CoapProfiling
         [Name("coap.token")]
         public string CoapToken { get; set; }
 
-
         [Name("coap.opt.uri_path_recon")]
         public string CoapUriPath { get; set; }
 
@@ -99,7 +115,6 @@ namespace Ironstone.Analyzers.CoapProfiling
         /// Gets Coap Host URI part deduced from Coap Code and flow information.
         /// </summary>
         public string CoapUriHost => CoapCode < 32 ? $"{IpDst}:{DstPort}" : $"{IpSrc}:{SrcPort}";
-
-        public CoapResourceAccess CoapObject => new CoapResourceAccess(CoapCode, CoapType, CoapUriPath);
     }
 }
+

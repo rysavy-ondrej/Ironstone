@@ -23,9 +23,9 @@ namespace Ironstone.Analyzers.CoapProfiling
 
         public IFittableDistribution<double>[] Distributions { get; private set;  }
 
-        public double[] Mean => Distributions.Select(x => (x as EmpiricalDistribution).Mean).ToArray();
+        public double[] Mean => Distributions.Select(x => ((x as UnivariateContinuousDistribution)?.Mean) ?? ((x as UnivariateDiscreteDistribution)?.Mean) ?? double.NaN).ToArray();
 
-        public double[] Variance => Distributions.Select(x => (x as EmpiricalDistribution).Variance).ToArray();
+        public double[] Variance => Distributions.Select(x => ((x as UnivariateContinuousDistribution)?.Variance) ?? ((x as UnivariateDiscreteDistribution)?.Variance) ?? double.NaN).ToArray();
 
         public double Threshold { get; internal set; }
 
@@ -59,10 +59,35 @@ namespace Ironstone.Analyzers.CoapProfiling
             return $"[dim={m_dimension} samples={Samples.Count} status={status}]";
         }
 
+        private void FitByAnalysis()
+        {
+            for (int i = 0; i < m_dimension; i++)
+            {
+                var samples = Samples.Select(x => x[i]).ToArray();
+                var da = new DistributionAnalysis();
+                // Learn the analysis
+                var fit = da.Learn(samples);
+                var distribution = fit[0].Distribution;
+                Distributions[i] = distribution;
+                m_pmax[i] = samples.Select(s => { try { return distribution.ProbabilityFunction(s); }  catch(Exception e) { return 0; } }).Max();
+            }
+        }
+
+
+        public void Fit()
+        {
+            FitByAnalysis();
+            // FitEmpirical();
+            var scores = Samples.Select(Score).ToList();
+            var t_mean = scores.Average();
+            var t_dev = scores.StdDev();
+            Threshold = Math.Sqrt(t_mean + t_dev);
+        }
+
         /// <summary>
         /// Fit the model to actual set of samples.
         /// </summary>
-        public void Fit()
+        private void FitEmpirical()
         {
             for (int i = 0; i < m_dimension; i++)
             {
@@ -71,11 +96,6 @@ namespace Ironstone.Analyzers.CoapProfiling
                 Distributions[i] = distribution;
                 m_pmax[i] = samples.Select(distribution.ProbabilityDensityFunction).Max();                
             }
-
-            var scores = Samples.Select(Score).ToList();
-            var t_mean = scores.Average();
-            var t_dev = scores.StdDev();
-            Threshold = Math.Sqrt(t_mean + t_dev); 
         }
 
         public double Score(double[] sample)
@@ -85,8 +105,15 @@ namespace Ironstone.Analyzers.CoapProfiling
             var a = new double[m_dimension];
             for (int i = 0; i < m_dimension; i++)
             {
-                var pdf = Distributions[i].ProbabilityFunction(sample[i]);
-                a[i] = 1 / Math.Max(epsilon, pdf / m_pmax[i]);
+                var pdf = 0.0;
+                try
+                {
+                    pdf = Distributions[i].ProbabilityFunction(sample[i]);
+                }
+                catch(Exception e)
+                { }
+
+                a[i] = 1 / Math.Max(epsilon, pdf == m_pmax[i] ? 1 : pdf / m_pmax[i]);
             }
             var s = (a.Average() - Amin) / (Amax - Amin);
             return s;

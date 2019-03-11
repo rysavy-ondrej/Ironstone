@@ -11,6 +11,9 @@ using ShellProgressBar;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
+
+
+
     internal class LearnProfile : IDisposable
     {
         internal static readonly double DefaultWindowSize = 60.0;
@@ -25,32 +28,43 @@ namespace Ironstone.Analyzers.CoapProfiling
             command.Description = "Create CoAP profiles from the specific capture file.";
             command.HelpOption("-?|-Help");
 
-            var windowOption = command.Option("-WindowSize <double>",
-                        "A size of windows in seconds.",
-                        CommandOptionType.MultipleValue);
-
             var readOption = command.Option("-InputFile <filename.csv>",
-                        "A name of input file in csv format that contains decoded CoAP packets.",
-                        CommandOptionType.MultipleValue);
+                "A name of input file in csv format that contains decoded CoAP packets.",
+                CommandOptionType.MultipleValue);
 
             var writeOption = command.Option("-WriteTo <filename>",
-                        "An output file to write binary representation of the profile.",
-                        CommandOptionType.SingleValue);
+                "An output file to write binary representation of the profile.",
+                CommandOptionType.SingleValue);
+
+            var windowOption = command.Option("-WindowSize <double>",
+                "A size of windows in seconds.",
+                CommandOptionType.MultipleValue);
+
+            var modelKeyOption = command.Option("-ModelKey <scheme>",
+                "Model key represents an aggregation scheme that is used to build individual flow models. It is usually drawn from the following values: 'coap.code', 'coap.type', 'coap.uri_path'. Default is  'coap.code,coap.type,coap.uri_path'.",
+                CommandOptionType.SingleValue);
+
+            var aggregateOption = command.Option("-Aggregate <scheme>",
+                "Aggregation scheme enables to group flows to group of flows. It accepts any combination of 'ip.src', 'ip.dst', 'udp.srcport', 'udp.dstport'. Default is ''.",
+                CommandOptionType.SingleValue);
+
 
             command.OnExecute(() =>
             {
-                double windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : DefaultWindowSize;
+                var windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : DefaultWindowSize;
+                var flowAggregation = aggregateOption.HasValue() ? FieldHelper.Parse<FlowKey.Fields>(aggregateOption.Value(), (x,y)=>(x|y)) : FlowKey.Fields.None;
+                var modelKey = modelKeyOption.HasValue() ? FieldHelper.Parse<CoapResourceAccess.Fields>(modelKeyOption.Value(), (x, y) => (x | y)) : CoapResourceAccess.Fields.CoapCode | CoapResourceAccess.Fields.CoapType | CoapResourceAccess.Fields.CoapUriPath;
+
                 if (readOption.HasValue() && writeOption.HasValue())
                 {
                     CreateProgressBar();
-                    var profile = LoadAndCompute(readOption.Value(), windowSize);
+                    var profile = LoadAndCompute(readOption.Value(), windowSize, modelKey, flowAggregation);
                     StoreProfile(profile, writeOption.Value());
                     return 0;
                 }
                 throw new CommandParsingException(command, $"Missing required arguments: {readOption.ShortName}, {writeOption.ShortName}.");
             });
         }
-
         ProgressBar progressBar; 
         private void CreateProgressBar()
         {
@@ -76,10 +90,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
         }
 
-        private CoapProfile<CoapStatisticalModel> LoadAndCompute(string inputFile, double windowSize)
+        private CoapProfile<CoapStatisticalModel> LoadAndCompute(string inputFile, double windowSize, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None)
         {
             var profile = new CoapProfile<CoapStatisticalModel>(windowSize);
-
+            var getFlowKeyFunc = FlowKey.GetFlowKeyFunc(flowAggregation);
+            var getModelKeyFunc = CoapResourceAccess.GetModelKeyFunc(modelKey);
             ResetProgressBar(0, $"Loading source packets...");
             using (var reader = new StreamReader(inputFile))
             using (var csv = new CsvReader(reader))
@@ -95,7 +110,7 @@ namespace Ironstone.Analyzers.CoapProfiling
                 foreach (var group in packetBins)
                 {
                     progressBar.Tick();
-                    var flows = CoapFlowRecord.CollectFlows(group, p => $"{p.IpSrc}.{p.SrcPort}->{p.IpDst}{p.DstPort}");
+                    var flows = CoapFlowRecord.CollectCoapFlows(group, getModelKeyFunc, getFlowKeyFunc);
                     ComputeProfile(profile, flows);
                 }
             }
@@ -103,7 +118,6 @@ namespace Ironstone.Analyzers.CoapProfiling
             profile.Commit(() => progressBar.Tick());
             return profile;
         }
-
 
         private static void ComputeProfile(CoapProfile<CoapStatisticalModel> profile, IEnumerable<CoapFlowRecord> flows)
         {

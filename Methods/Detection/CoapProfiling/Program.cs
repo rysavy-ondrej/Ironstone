@@ -1,14 +1,4 @@
-﻿using Accord.Statistics.Distributions.DensityKernels;
-using Accord.Statistics.Testing;
-using ConsoleTableExt;
-using CsvHelper;
-using CsvHelper.Configuration.Attributes;
-using Microsoft.Extensions.CommandLineUtils;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.IO;
-using System.Linq;
+﻿using Microsoft.Extensions.CommandLineUtils;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
@@ -20,8 +10,10 @@ namespace Ironstone.Analyzers.CoapProfiling
         {
             logger.Debug("Application started.");
 
-            var commandLineApplication = new CommandLineApplication();
-            commandLineApplication.Name = "Ironstone.Analyzers.CoapProfiling";
+            var commandLineApplication = new CommandLineApplication
+            {
+                Name = "Ironstone.Analyzers.CoapProfiling"
+            };
             commandLineApplication.HelpOption("-?|-Help");
 
             commandLineApplication.Command("Learn-Profile", configuration: new LearnProfile().Configuration);

@@ -34,3 +34,7 @@ Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/Ironstone.Analyzers.Coap
 Methods/Detection/CoapProfiling/obj/Debug/netcoreapp2.2/project.razor.json
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-flood.csv
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap.profile
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-aggregated.profile
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-aggregated.test
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-simple.profile
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-simple.test
