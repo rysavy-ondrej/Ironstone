@@ -11,6 +11,8 @@ namespace Ironstone.Analyzers.CoapProfiling
 {
     internal class TestCapture
     {
+        internal static readonly double DefaultWindowSize = 60.0;
+
         public void Configuration(CommandLineApplication command)
         {
             command.Description = "Tests the differences of the communication to the CoAP profile.";
@@ -27,15 +29,24 @@ namespace Ironstone.Analyzers.CoapProfiling
             var profileOption = command.Option("-ProfileFile <filename.profile>",
                         "A name of a profile file.",
                         CommandOptionType.MultipleValue);
+            var modelKeyOption = command.Option("-ModelKey <scheme>",
+                "Model key represents an aggregation scheme that is used to build individual flow models. It is usually drawn from the following values: 'coap.code', 'coap.type', 'coap.uri_path'. Default is  'coap.code,coap.type,coap.uri_path'.",
+                CommandOptionType.SingleValue);
 
+            var aggregateOption = command.Option("-Aggregate <scheme>",
+                "Aggregation scheme enables to group flows to group of flows. It accepts any combination of 'ip.src', 'ip.dst', 'udp.srcport', 'udp.dstport'. Default is ''.",
+                CommandOptionType.SingleValue);
 
             command.OnExecute(() =>
             {
-                double windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : LearnProfile.DefaultWindowSize;
+                var windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : DefaultWindowSize;
+                var flowAggregation = aggregateOption.HasValue() ? FieldHelper.Parse<FlowKey.Fields>(aggregateOption.Value(), (x, y) => (x | y)) : FlowKey.Fields.None;
+                var modelKey = modelKeyOption.HasValue() ? FieldHelper.Parse<CoapResourceAccess.Fields>(modelKeyOption.Value(), (x, y) => (x | y)) : CoapResourceAccess.Fields.CoapCode | CoapResourceAccess.Fields.CoapType | CoapResourceAccess.Fields.CoapUriPath;
+
                 if (readOption.HasValue() && profileOption.HasValue())
                 {
                     var profile = PrintProfile.LoadProfile(profileOption.Value());
-                    LoadAndTest(profile, readOption.Value(), windowSize);
+                    LoadAndTest(profile, readOption.Value(), windowSize, modelKey, flowAggregation);
                     return 0;
                 }
                 throw new CommandParsingException(command, $"Missing required arguments: {readOption.ShortName}, {profileOption.ShortName}.");
@@ -43,8 +54,10 @@ namespace Ironstone.Analyzers.CoapProfiling
         }
 
 
-        private void LoadAndTest(CoapProfile<CoapStatisticalModel> profile, string inputFile, double windowSize)
+        private void LoadAndTest(CoapProfile<CoapStatisticalModel> profile, string inputFile, double windowSize, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None)
         {
+            var getFlowKeyFunc = FlowKey.GetFlowKeyFunc(flowAggregation);
+            var getModelKeyFunc = CoapResourceAccess.GetModelKeyFunc(modelKey);
             using (var reader = new StreamReader(inputFile))
             using (var csv = new CsvReader(reader))
             {
@@ -53,46 +66,67 @@ namespace Ironstone.Analyzers.CoapProfiling
                 csv.Configuration.HeaderValidated = null;
                 var packets = csv.GetRecords<CoapPacketRecord>().ToList();
                 var startTime = packets.First().TimeEpoch;
-                var packetGroups = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize));
-                foreach (var group in packetGroups)
+                var packetBins = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize));
+
+                var matched = 0;
+                var unmatched = 0;
+                var unknown = 0;
+
+                foreach (var group in packetBins)
                 {
-                    var flows = CoapFlowRecord.CollectFlows(group, p => $"{p.IpSrc}.{p.SrcPort}->{p.IpDst}{p.DstPort}");
-                    TestAndPrint(profile, flows, $"{DateTime.UnixEpoch.AddSeconds((long)startTime + (group.Key * windowSize))}");
+                    var flows = CoapFlowRecord.CollectCoapFlows(group, getModelKeyFunc, getFlowKeyFunc);
+                    var testResults = TestAndPrint(profile, flows, $"{DateTime.UnixEpoch.AddSeconds((long)startTime + (group.Key * windowSize))}");
+                    matched += testResults.Matched;
+                    unmatched += testResults.Unmatched;
+                    unknown += testResults.Unknonwn;
                 }
+                var measuresTable = new DataTable();
+                measuresTable.Columns.Add("Metric", typeof(string));
+                measuresTable.Columns.Add("Value", typeof(double));
+                measuresTable.Rows.Add("Matched", matched);
+                measuresTable.Rows.Add("Unmatched", unmatched);
+                measuresTable.Rows.Add("Unknown", unknown);
+                Console.WriteLine("Measures:");
+                ConsoleTableBuilder.From(measuresTable)
+                    .WithFormat(ConsoleTableBuilderFormat.MarkDown)
+                    .ExportAndWriteLine();
             }
         }
 
-        private (int Match, int Anomaly) TestAndPrint(CoapProfile<CoapStatisticalModel> profile, IEnumerable<CoapFlowRecord> flows, string label = "")
+        private (int Matched, int Unmatched, int Unknonwn) TestAndPrint(CoapProfile<CoapStatisticalModel> profile, IEnumerable<CoapFlowRecord> flows, string label = "")
         {
-            var normal = 0;
-            var anomaly = 0;
+            var matched = 0;
+            var unmatched = 0;
+            var unknown = 0;
             var matchingTable = new DataTable();
             matchingTable.Columns.Add("CoAP Flow", typeof(string));
             matchingTable.Columns.Add("Packets", typeof(string));
             matchingTable.Columns.Add("Octets", typeof(string));
             matchingTable.Columns.Add("Score", typeof(double));
             matchingTable.Columns.Add("Threshold", typeof(double));
-            matchingTable.Columns.Add("Anomaly", typeof(string));
+            matchingTable.Columns.Add("Matches?", typeof(string));
             foreach (var flow in flows)
             {
                 var observation = new double[] { flow.FlowPackets, flow.FlowOctets };
                 if (profile.TryGetValue(flow.CoapObject.ToString(), out var matchingProfile))
                 {
                     var score = matchingProfile.Score(observation);
-                    var isAnomalous = (score > (matchingProfile.Threshold));
-                    matchingTable.Rows.Add($"{flow.FlowKey} {flow.CoapObject}", flow.FlowPackets, flow.FlowOctets, score, matchingProfile.Threshold, isAnomalous.ToString());
-                    if (isAnomalous) anomaly++; else normal++;
+                    var matches = (score <= (matchingProfile.Threshold));
+                    matchingTable.Rows.Add($"{flow.Key} {flow.CoapObject}", flow.FlowPackets, flow.FlowOctets, score, matchingProfile.Threshold, matches.ToString());
+                    if (matches) matched++;
+                    else unmatched++;
                 }
                 else
                 {
-                    matchingTable.Rows.Add($"{flow.FlowKey} {flow.CoapObject}", flow.FlowPackets, flow.FlowOctets, double.NaN, double.NaN, "unknown");
+                    matchingTable.Rows.Add($"{flow.Key} {flow.CoapObject}", flow.FlowPackets, flow.FlowOctets, double.NaN, double.NaN, "unknown");
+                    unknown++;
                 }
             }
             Console.WriteLine($"{label}:");
             ConsoleTableBuilder.From(matchingTable)
                 .WithFormat(ConsoleTableBuilderFormat.MarkDown)
                 .ExportAndWriteLine();
-            return (normal, anomaly);
+            return (matched, unmatched, unknown);
         }
 
         void PrintEvaluation(int truePositive, int trueNegative, int falsePositive, int falseNegative)
