@@ -62,3 +62,5 @@ Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-abnormal
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/coap-test2.csv
 
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/tests.sh
+
+Methods/Detection/CoapProfiling/coap2.profile
