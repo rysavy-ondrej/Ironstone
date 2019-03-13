@@ -6,7 +6,7 @@ namespace Ironstone.Analyzers.CoapProfiling
     public class FlowKey
     {
         [Flags]
-        public enum Fields { None = 0, IpSrc = 1, IpDst = 2, SrcPort = 4, DstPort = 8 }
+        public enum Fields { None = 0, IpSrc = 1, IpDst = 2, UdpSrcPort = 4, UdpDstPort = 8 }
         public string IpSrc { get; internal set; }
         public int SrcPort { get; internal set; }
         public string IpDst { get; internal set; }
@@ -19,9 +19,9 @@ namespace Ironstone.Analyzers.CoapProfiling
                 var fk = new FlowKey
                 {
                     IpSrc = aggregation.HasFlag(FlowKey.Fields.IpSrc) ? "0.0.0.0" : p.IpSrc,
-                    SrcPort = aggregation.HasFlag(FlowKey.Fields.SrcPort) ? 0 : p.SrcPort,
+                    SrcPort = aggregation.HasFlag(FlowKey.Fields.UdpSrcPort) ? 0 : p.SrcPort,
                     IpDst = aggregation.HasFlag(FlowKey.Fields.IpDst) ? "0.0.0.0" : p.IpDst,
-                    DstPort = aggregation.HasFlag(FlowKey.Fields.DstPort) ? 0 : p.DstPort
+                    DstPort = aggregation.HasFlag(FlowKey.Fields.UdpDstPort) ? 0 : p.DstPort
                 };
                 return fk.ToString();
             };

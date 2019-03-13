@@ -3,6 +3,7 @@ using Accord.Statistics.Distributions;
 using Accord.Statistics.Distributions.Fitting;
 using Accord.Statistics.Distributions.Multivariate;
 using Accord.Statistics.Distributions.Univariate;
+using Accord.MachineLearning;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ using System.Runtime.Serialization;
 namespace Ironstone.Analyzers.CoapProfiling
 {
     [Serializable]
-    class CoapStatisticalModel : ICoapModel
+    class CoapMixtureModel : ICoapModel
     {
         const double epsilon = 1e-6;
         string[] m_dimensions;
@@ -46,7 +47,7 @@ namespace Ironstone.Analyzers.CoapProfiling
         }
 
 
-        public CoapStatisticalModel(params string[] dimensions)
+        public CoapMixtureModel(params string[] dimensions)
         {
             _Initialize(dimensions, null);   
         }
@@ -57,7 +58,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             return $"[dim={m_dimensions} samples={Samples.Count} status={status}]";
         }
 
-        private UnivariateContinuousDistribution FitDistribution(double [] samples)
+        private UnivariateContinuousDistribution GetDistribution(double [] samples)
         {
             if (samples.Length < 10)
             {
@@ -65,20 +66,34 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
             else
             {
-                var exp = new ExponentialDistribution(); // new LognormalDistribution(); // 
-                exp.Fit(samples);
-                return exp;
+                Accord.Math.Random.Generator.Seed = 0;
+                // determining the optimal number of clusters is not easy, we use 
+                // a simple heuristics based on the numeber of samples
+                var clusterCount = (int)Math.Ceiling(Math.Log(samples.Length, 10));
+                var kmean = new KMeans(clusterCount);
+                var clusters = kmean.Learn(samples.Select(x=>new double[] { x }).ToArray());
+                var components = new NormalDistribution[clusters.Count];
+                for(int i = 0; i < clusters.Count; i++)
+                {
+                    var cluster = clusters[i];
+                    components[i] = new NormalDistribution(cluster.Centroid.First()); //, cluster.Proportion);
+                }
+
+                var mix = new Mixture<NormalDistribution>(components);
+                mix.Fit(samples);
+                return mix;
             }
         }
 
-        private void FitByAnalysis()
+        private void FitDistributions()
         {
             for (int i = 0; i < m_dimensions.Length; i++)
             {
                 var samples = Samples.Select(x => x[i]).ToArray();
-                var distribution = FitDistribution(samples); 
+                var distribution = GetDistribution(samples); 
                 Distributions[i] = distribution;
-                m_pmax[i] = samples.Select(s => GetProbability(distribution, s)).Max();
+                var ps = samples.Select(s => (S: s, P: GetProbability(distribution, s))).ToArray();
+                m_pmax[i] = ps.Select(x=>x.P).Max();
             }
         }
 
@@ -90,18 +105,18 @@ namespace Ironstone.Analyzers.CoapProfiling
         {
             try
             {
-                var p = distribution.ProbabilityDensityFunction(value);
-                return Math.Max(epsilon, p);
+                var p = distribution.LogProbabilityDensityFunction(value);
+                return p;
             }
             catch(InvalidOperationException)
             {
-                return epsilon;
+                return Math.Log(epsilon);
             }
         } 
 
         public void Fit()
         {
-            FitByAnalysis();
+            FitDistributions();
             var scores = Samples.Select(s=> (Observation: s,Score: Score(s))).ToList();
             var (t_mean, t_dev) = scores.Select(s => s.Score).MeanAbsoluteDeviation();
             Threshold = Math.Max(0, t_mean - t_dev);
@@ -117,7 +132,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             {
                 var p = GetProbability(Distributions[i], sample[i]);
                 // we normalize the value to be between [0-1] as we compute the score as a product of individual probabilities:
-                a[i] = p == m_pmax[i] ? 1 : p / m_pmax[i];
+                a[i] = 1 / (p / m_pmax[i]);
             }
             var s = a.Aggregate((x,y)=>x*y);
             return s;
@@ -129,7 +144,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             info.AddValue("samples", Samples.ToArray(), typeof(double[][]));
         }
 
-        public CoapStatisticalModel(SerializationInfo info, StreamingContext context)
+        public CoapMixtureModel(SerializationInfo info, StreamingContext context)
         {
             var dimensions =(string[]) info.GetValue("dimensions", typeof(string[]));
             var samples = (double[][])info.GetValue("samples", typeof(double[][]));

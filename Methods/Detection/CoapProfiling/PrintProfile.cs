@@ -37,11 +37,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             });
         }
 
-        internal static CoapProfile<CoapStatisticalModel> LoadProfile(string fileName)
+        internal static CoapProfile LoadProfile(string fileName) 
         {
             IFormatter formatter = new BinaryFormatter();
             var s = new FileStream(fileName, FileMode.Open);
-            var pm = (CoapProfile<CoapStatisticalModel>)formatter.Deserialize(s);
+            var pm = (CoapProfile)formatter.Deserialize(s);
             return pm;
         }
 

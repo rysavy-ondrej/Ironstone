@@ -6,4 +6,9 @@
   <PropertyGroup>
     <ActiveDebugProfile>TestCapture</ActiveDebugProfile>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'LearnProfile' ">
+    <StartAction>Project</StartAction>
+    <StartArguments>Learn-Profile -InputFile=SampleData/coap-learn.csv -WriteTo coap2.profile -Aggregate="udp.srcport,udp.dstport"</StartArguments>
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
 </Project>

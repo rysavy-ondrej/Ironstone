@@ -10,23 +10,38 @@ using System.Text;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-    [Serializable]
-    public class CoapProfile<T> : ISerializable where T : ICoapModel 
-    {
-        public double WindowSize { get; set; }
-        IDictionary<string, T> profileDictionary = new Dictionary<string,T>();
 
-        public CoapProfile(double windowSize) { WindowSize = windowSize; }
+    public class ProfileFactory
+    {
+        public static CoapProfile Create(Type typ, string[] dimensions, double windowSize)
+        {
+            if (typ == typeof(CoapStatisticalModel)) return new CoapProfile(dimensions, windowSize, d => new CoapStatisticalModel(d));
+            if (typ == typeof(CoapMixtureModel)) return new CoapProfile(dimensions, windowSize, d => new CoapMixtureModel(d));
+            if (typ == typeof(CoapStatisticalFingerprint)) return new CoapProfile(dimensions, windowSize, d => new CoapStatisticalFingerprint(d));
+            return null;
+        }
+    }
+
+    [Serializable]
+    public class CoapProfile : ISerializable
+    { 
+        public string[] Dimensions { get; set; }
+        public double WindowSize { get; set; }
+
+        private readonly Func<string[], ICoapModel> m_modelBuilder;
+        IDictionary<string, ICoapModel> profileDictionary = new Dictionary<string, ICoapModel>();
+
+        public CoapProfile(string[] dimensions, double windowSize, Func<string[], ICoapModel> builder) { Dimensions = dimensions; WindowSize = windowSize; m_modelBuilder = builder; }
 
         public ICollection<string> Keys => profileDictionary.Keys;
 
-        public ICollection<T> Values => profileDictionary.Values;
+        public ICollection<ICoapModel> Values => profileDictionary.Values;
 
         public int Count => profileDictionary.Count;
 
-        public T this[string key] { get => profileDictionary[key]; set => profileDictionary[key] = value; }
+        public ICoapModel this[string key] { get => profileDictionary[key]; set => profileDictionary[key] = value; }
 
-        public void Add(string key, T value)
+        public void Add(string key, ICoapModel value)
         {
             profileDictionary.Add(key, value);
         }
@@ -36,7 +51,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             return profileDictionary.ContainsKey(key);
         }
 
-        public bool TryGetValue(string key, out T value)
+        public bool TryGetValue(string key, out ICoapModel value)
         {
             return profileDictionary.TryGetValue(key, out value);
         }
@@ -46,7 +61,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             profileDictionary.Clear();
         }
 
-        public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, ICoapModel>> GetEnumerator()
         {
             return profileDictionary.GetEnumerator();
         }
@@ -71,7 +86,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             for(int i = 0; i <count; i++)
             {
                 var key = info.GetString($"key_{i}");
-                var value = (T)info.GetValue($"val_{i}", typeof(T));
+                var value = (ICoapModel)info.GetValue($"val_{i}", typeof(ICoapModel));
                 this.profileDictionary.Add(key, value);
             }
             foreach (var model in profileDictionary) model.Value.Fit();
@@ -116,6 +131,13 @@ namespace Ironstone.Analyzers.CoapProfiling
                 model.Value.Fit();
                 progressCallback?.Invoke();
             }
+        }
+
+
+
+        public ICoapModel NewModel()
+        {
+            return m_modelBuilder(this.Dimensions);
         }
     }
 }

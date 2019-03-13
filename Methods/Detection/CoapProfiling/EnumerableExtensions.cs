@@ -46,5 +46,24 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
             return ret;
         }
+
+        public static (double Mean, double Dev) MeanAbsoluteDeviation(this IEnumerable<double> values)
+        {
+
+            int count = values.Count();
+            if (count > 1)
+            {
+                //Compute the Average
+                double avg = values.Average();
+
+                //Perform the Sum of |value-avg|
+                double sum = values.Sum(d => Math.Abs(d - avg) );
+
+                //Put it all together
+                var dev = (sum / count);
+                return (avg, dev);
+            }
+            return (0, 0);
+        }
     }
 }
