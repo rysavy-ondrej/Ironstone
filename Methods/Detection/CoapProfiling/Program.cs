@@ -19,6 +19,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             commandLineApplication.Command("Learn-Profile", configuration: new LearnProfile().Configuration);
             commandLineApplication.Command("Test-Capture", configuration: new TestCapture().Configuration);
             commandLineApplication.Command("Print-Profile", configuration: new PrintProfile().Configuration);
+            commandLineApplication.Command("Compute-Distance", configuration: new ComputeDistance().Configuration);
 
             commandLineApplication.OnExecute(() =>
             {

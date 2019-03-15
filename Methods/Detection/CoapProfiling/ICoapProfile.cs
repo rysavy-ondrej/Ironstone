@@ -12,4 +12,10 @@ namespace Ironstone.Analyzers.CoapProfiling
         double Score(double[] sample);
         Dictionary<string,string> Info { get; }
     }
+
+
+    public interface ICoapModelFactory 
+    {
+        ICoapModel NewModel(string[] dimensions);
+    }
 }

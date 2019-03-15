@@ -1,28 +1,24 @@
 {
   "profiles": {
-    "LearnProfile": {
-      "commandName": "Project",
-      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-learn.csv -WriteTo=SampleData\\coap-simple.profile"
-    },
     "PrintProfile": {
       "commandName": "Project",
-      "commandLineArgs": "Print-Profile -InputFile=SampleData\\coap-simple.profile"
+      "commandLineArgs": "Print-Profile -InputFile=Profiles\\regular.profile > Dumps\\regular.profile.txt"
     },
     "TestCapture": {
       "commandName": "Project",
-      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-simple.profile > SampleData\\coap-simple.test"
+      "commandLineArgs": "Test-Capture -InputFile=SampleData\\regular.csv -ProfileFile=Profiles\\regular.profile > Dumps\\regular.test"
     },
-    "LearnProfile-Aggregate": {
+    "MergeProfiles": {
       "commandName": "Project",
-      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\coap-learn.csv -WriteTo=SampleData\\coap-aggregated.profile -Aggregate=srcport,dstport"
+      "commandLineArgs": "Test-Capture -ProfileFile=Profiles/regular.profile -ProfileFile=Profiles/idle.profile    -InputFile=SampleData/idle.csv -Aggregate=\"udp.srcport,udp.dstport\" -TresholdFactor=0.8 > Dumps/all_test30.txt"
     },
-    "TestCapture-Aggregate": {
+    "LearnProfile-Ide": {
       "commandName": "Project",
-      "commandLineArgs": "Test-Capture -InputFile=SampleData\\coap-test.csv -ProfileFile=SampleData\\coap-aggregated.profile -Aggregate=srcport,dstport > SampleData\\coap-aggregated.test"
+      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\idle.csv -WriteTo=Profiles\\idle.profile -Aggregate=\"udp.srcport,udp.dstport\""
     },
-    "PrintProfile-Aggregate": {
+    "LearnProfile-Regular": {
       "commandName": "Project",
-      "commandLineArgs": "Print-Profile -InputFile SampleData\\coap-aggregated.profile"
+      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\regular.csv -WriteTo=Profiles\\regular.profile -Aggregate=\"udp.srcport,udp.dstport\""
     }
   }
 }

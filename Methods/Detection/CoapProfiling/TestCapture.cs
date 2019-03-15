@@ -23,19 +23,23 @@ namespace Ironstone.Analyzers.CoapProfiling
                 "A size of windows in seconds.",
                 CommandOptionType.MultipleValue);
 
-            var readOption = command.Option("-InputFile <filename.csv>",
+            var readOption = command.Option("-InputFile <string>",
                 "A name of an input file in csv format that contains decoded CoAP packets.",
                 CommandOptionType.MultipleValue);
 
-            var profileOption = command.Option("-ProfileFile <filename.profile>",
+            var profileOption = command.Option("-ProfileFile <string>",
                 "A name of a profile file.",
                 CommandOptionType.MultipleValue);
-            var modelKeyOption = command.Option("-ModelKey <scheme>",
+            var modelKeyOption = command.Option("-ModelKey <string>",
                 "Model key represents an aggregation scheme that is used to build individual flow models. It is usually drawn from the following values: 'coap.code', 'coap.type', 'coap.uri_path'. Default is  'coap.code,coap.type,coap.uri_path'.",
                 CommandOptionType.SingleValue);
 
-            var aggregateOption = command.Option("-Aggregate <scheme>",
+            var aggregateOption = command.Option("-Aggregate <string>",
                 "Aggregation scheme enables to group flows to group of flows. It accepts any combination of 'ip.src', 'ip.dst', 'udp.srcport', 'udp.dstport'. Default is ''.",
+                CommandOptionType.SingleValue);
+
+            var tresholdOption = command.Option("-TresholdFactor <double>",
+                "A Factor used to scale the treshold. The usual values are between 0-1. Default is 1.",
                 CommandOptionType.SingleValue);
 
             command.OnExecute(() =>
@@ -43,10 +47,13 @@ namespace Ironstone.Analyzers.CoapProfiling
                 var windowSize = windowOption.HasValue() ? Double.Parse(windowOption.Value()) : DefaultWindowSize;
                 var flowAggregation = aggregateOption.HasValue() ? FieldHelper.Parse<FlowKey.Fields>(aggregateOption.Value(), (x, y) => (x | y)) : FlowKey.Fields.None;
                 var modelKey = modelKeyOption.HasValue() ? FieldHelper.Parse<CoapResourceAccess.Fields>(modelKeyOption.Value(), (x, y) => (x | y)) : CoapResourceAccess.Fields.CoapCode | CoapResourceAccess.Fields.CoapType | CoapResourceAccess.Fields.CoapUriPath;
-
+                var thresholdMultiplier = tresholdOption.HasValue() ? Double.Parse(tresholdOption.Value()) : 1;
                 if (readOption.HasValue() && profileOption.HasValue())
-                {
-                    var profile = PrintProfile.LoadProfile(profileOption.Value());
+                {                    
+                    var profiles = profileOption.Values.Select(PrintProfile.LoadProfile).ToList();
+
+                    var profile = profiles.Count == 1 ? profiles.First() : MergeProfiles(profiles);
+                    profile.ThresholdMultiplier = thresholdMultiplier;
                     LoadAndTest(profile, readOption.Value(), windowSize, modelKey, flowAggregation);
                     return 0;
                 }
@@ -54,6 +61,24 @@ namespace Ironstone.Analyzers.CoapProfiling
             });
         }
 
+        private CoapProfile MergeProfiles(List<CoapProfile> profiles)
+        {
+            var first = profiles.First();
+
+            var profile = new CoapProfile(first.Dimensions, first.WindowSize, first.ModelBuilder);
+            var targets = profiles.SelectMany(p => p.Items).GroupBy(m => m.Key);
+            foreach(var target in targets)
+            {
+                var model = profile.NewModel();
+                foreach (var oldModel in target)
+                {
+                    model.Samples.AddRange(oldModel.Value.Samples);
+                }
+                profile.Add(target.Key, model);
+            }
+            profile.Commit();
+            return profile;
+        }
 
         private void LoadAndTest(CoapProfile profile, string inputFile, double windowSize, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None) 
         {
@@ -112,7 +137,7 @@ namespace Ironstone.Analyzers.CoapProfiling
                 if (profile.TryGetValue(flow.CoapObject.ToString(), out var matchingProfile))
                 {
                     var score = matchingProfile.Score(observation);
-                    var matches = (score > (matchingProfile.Threshold));
+                    var matches = (score > (matchingProfile.Threshold * profile.ThresholdMultiplier));
                     matchingTable.Rows.Add($"{flow.Key} {flow.CoapObject}", flow.FlowPackets, flow.FlowOctets, score, matchingProfile.Threshold, matches ? "normal" : "abnormal");
                     if (matches) normalCount++;
                     else abnormalCount++;
