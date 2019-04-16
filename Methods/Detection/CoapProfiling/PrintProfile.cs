@@ -31,10 +31,37 @@ namespace Ironstone.Analyzers.CoapProfiling
                 {
                     var profile = LoadProfile(readOption.Value());
                     profile.Dump(Console.Out);
+
+                    DumpPdf(profile);
                     return 0;
                 }
                 throw new CommandParsingException(command, $"Missing required argument {readOption.ShortName}.");
             });
+        }
+
+        /// <summary>
+        /// Prints PDF of all models as CSV suitable for visualization. 
+        /// </summary>
+        /// <param name="profile"></param>
+        private void DumpPdf(CoapProfile profile)
+        {
+            foreach(var model in profile)
+            {
+                Console.WriteLine($"{model.Key}:");
+                Console.WriteLine($"x,y,score");
+                var samples = model.Value.Samples;
+                var xmin = samples.Select(x => x[0]).Min(); var xmax = samples.Select(x => x[0]).Max();
+                var ymin = samples.Select(x => x[1]).Min(); var ymax = samples.Select(x => x[1]).Max();
+                var xdelta = (xmax - xmin) / 10;
+                var ydelta = (ymax - ymin) / 10;
+
+                for (var x = xmin; x < xmax; x+= xdelta)
+                    for(var y = ymin; y < ymax; y +=ydelta)
+                    {
+                        Console.WriteLine($"{x},{y},{model.Value.Score(new[] { x,y})}");
+                    }
+                Console.WriteLine();
+            }
         }
 
         internal static CoapProfile LoadProfile(string fileName) 

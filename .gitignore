@@ -110,3 +110,9 @@ Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/attack.csv
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/idle.csv
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/observe.csv
 Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/regular.csv
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/idle-attack30.dist.md
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/idle_attack30.md
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/model-put_con_floor_1_1_temp.csv
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/regular.profile.txt
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/regular30.profile.md
+Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/Dumps/regular_observe30.md
