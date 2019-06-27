@@ -16,9 +16,17 @@ namespace Ironstone.Analyzers.CoapProfiling
     { 
         public string[] Dimensions { get; set; }
         public double WindowSize { get; set; }
+        public FlowKey.Fields FlowAggregation { get; }
+        public Enum ModelKey { get; }
+
         IDictionary<string, IFlowModel> profileDictionary = new Dictionary<string, IFlowModel>();
 
-        public FlowProfile(string[] dimensions, double windowSize, IFlowModelFactory builder) { Dimensions = dimensions; WindowSize = windowSize; ModelBuilder = builder; }
+        public ProtocolFactory ProtocolFactory { get; private set; }
+
+        public FlowProfile(ProtocolFactory protocolFactory, string[] dimensions, double windowSize,
+                    FlowKey.Fields flowAggregation, Enum modelKey,
+                    IFlowModelFactory builder)
+        { ProtocolFactory = protocolFactory; Dimensions = dimensions; WindowSize = windowSize; FlowAggregation = flowAggregation; ModelKey = modelKey; ModelBuilder = builder; }
 
         public ICollection<string> Keys => profileDictionary.Keys;
 
@@ -65,6 +73,9 @@ namespace Ironstone.Analyzers.CoapProfiling
             info.AddValue(nameof(Dimensions), Dimensions);
             info.AddValue(nameof(WindowSize), WindowSize);
             info.AddValue(nameof(ModelBuilder), ModelBuilder);
+            info.AddValue(nameof(ProtocolFactory), ProtocolFactory);
+            info.AddValue(nameof(FlowAggregation), FlowAggregation);
+            info.AddValue(nameof(ModelKey), ModelKey);
             info.AddValue(nameof(profileDictionary.Count), profileDictionary.Count);
             var i = 0;
             foreach(var profile in profileDictionary)
@@ -80,6 +91,10 @@ namespace Ironstone.Analyzers.CoapProfiling
             Dimensions = (string[])info.GetValue(nameof(Dimensions), typeof(string[]));
             WindowSize = info.GetDouble(nameof(WindowSize));
             ModelBuilder = (IFlowModelFactory)info.GetValue(nameof(ModelBuilder), typeof(IFlowModelFactory));
+            ProtocolFactory = (ProtocolFactory)info.GetValue(nameof(ProtocolFactory), typeof(ProtocolFactory));
+            FlowAggregation = (FlowKey.Fields)info.GetValue(nameof(FlowAggregation), typeof(FlowKey.Fields));
+            ModelKey = (Enum)info.GetValue(nameof(ModelKey), typeof(Enum));
+
             var count = info.GetInt32(nameof(profileDictionary.Count));
             for(int i = 0; i <count; i++)
             {
@@ -94,6 +109,18 @@ namespace Ironstone.Analyzers.CoapProfiling
         {
             var first = profileDictionary.First();
             var info = first.Value.Info;
+
+            var infoTable = new DataTable();
+            infoTable.Columns.Add("Parameter", typeof(string));
+            infoTable.Columns.Add("Value", typeof(string));
+            infoTable.Rows.Add("Dimensions", String.Join(',',Dimensions));
+            infoTable.Rows.Add("WindowSize", WindowSize.ToString());
+            infoTable.Rows.Add("Protocol", ProtocolFactory.Name);
+            infoTable.Rows.Add("FlowAggregation", FlowAggregation.ToString());
+            infoTable.Rows.Add("ModelKey", ModelKey.ToString());
+
+            var sb1 = ConsoleTableBuilder.From(infoTable).WithFormat(ConsoleTableBuilderFormat.MarkDown).Export();
+            writer.WriteLine(sb1.ToString());
 
             var profileTable = new DataTable();
             profileTable.Columns.Add("Name", typeof(string));
@@ -117,9 +144,9 @@ namespace Ironstone.Analyzers.CoapProfiling
                 profileTable.Rows.Add(row);
             }
 
-            var sb = ConsoleTableBuilder.From(profileTable)
+            var sb2 = ConsoleTableBuilder.From(profileTable)
                .WithFormat(ConsoleTableBuilderFormat.MarkDown).Export();
-            writer.WriteLine(sb.ToString());
+            writer.WriteLine(sb2.ToString());
         }
 
         internal void Commit(Action progressCallback = null)
@@ -136,6 +163,25 @@ namespace Ironstone.Analyzers.CoapProfiling
         public IFlowModel NewModel()
         {
             return ModelBuilder.NewModel(this.Dimensions);
+        }
+
+        public static FlowProfile MergeProfiles(List<FlowProfile> profiles)
+        {
+            var first = profiles.First();
+
+            var profile = new FlowProfile(first.ProtocolFactory, first.Dimensions, first.WindowSize, first.FlowAggregation, first.ModelKey, first.ModelBuilder);
+            var targets = profiles.SelectMany(p => p.Items).GroupBy(m => m.Key);
+            foreach (var target in targets)
+            {
+                var model = profile.NewModel();
+                foreach (var oldModel in target)
+                {
+                    model.Samples.AddRange(oldModel.Value.Samples);
+                }
+                profile.Add(target.Key, model);
+            }
+            profile.Commit();
+            return profile;
         }
     }
 }

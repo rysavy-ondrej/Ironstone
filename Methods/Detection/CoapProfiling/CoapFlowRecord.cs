@@ -5,11 +5,14 @@ using System.Linq;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-    public class CoapFlowRecord
+    public class CoapFlowRecord : IFlowRecord
     {
         [Flags]
-        public enum Fields { Unknown=0, CFlowAbsTimeStart=1, CFlowAbsTimeEnd=2, CFlowSrcAddr=4, CFlowSrcPort=8, CFlowDstAddr=16, CFlowDstPort=32, CFlowPackets=64,
-            CFlowOctets=128, FlowCoapCode=256, FlowCoapType=512, FlowCoapUri_Path=1024 } 
+        public enum Fields
+        {
+            Unknown = 0, CFlowAbsTimeStart = 1, CFlowAbsTimeEnd = 2, CFlowSrcAddr = 4, CFlowSrcPort = 8, CFlowDstAddr = 16, CFlowDstPort = 32, CFlowPackets = 64,
+            CFlowOctets = 128, FlowCoapCode = 256, FlowCoapType = 512, FlowCoapUri_Path = 1024
+        }
 
         public Fields ParseFieldName(string fieldName) =>
             Enum.TryParse<Fields>(fieldName.Replace(".", ""), true, out var result) ? result : Fields.Unknown;
@@ -50,6 +53,8 @@ namespace Ironstone.Analyzers.CoapProfiling
 
         public CoapResourceAccess CoapObject => new CoapResourceAccess(CoapCode, CoapType, CoapUriPath);
 
+        public object Model => CoapObject;
+
         public FlowKey Key => new FlowKey
         {
             IpSrc = this.SrcAddr,
@@ -58,23 +63,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             DstPort = this.DstPort
         };
 
-        /// <summary>
-        /// Collects CoAP packets into flows. It first groups packets according to the specified model key computed by <paramref name="getModelKey"/>. Then flows are computed within each model group by <paramref name="getFlowKey"/> function. 
-        /// </summary>
-        /// <param name="packets"></param>
-        /// <param name="getModelKey"></param>
-        /// <param name="getFlowKey"></param>
-        /// <returns></returns>
-        public static IEnumerable<CoapFlowRecord> CollectCoapFlows(IEnumerable<CoapPacketRecord> packets, Func<CoapPacketRecord,string> getModelKey, Func<CoapPacketRecord, string> getFlowKey)
+        public static CoapFlowRecord GetFlow(IGrouping<string, IPacketRecord> arg)
         {
-            return packets.GroupBy(getModelKey).SelectMany(g => g.GroupBy(getFlowKey).Select(GetFlow));
-        }
-
-        private static CoapFlowRecord GetFlow(IGrouping<string, CoapPacketRecord> arg)
-        {
-            var first = arg.First();
+            var first = arg.First() as CoapPacketRecord;
             var last = arg.Last();
-            var flowKey =FlowKey.Parse(arg.Key);
+            var flowKey = FlowKey.Parse(arg.Key);
             return new CoapFlowRecord
             {
                 StartMsec = first.TimeEpoch,
@@ -86,7 +79,7 @@ namespace Ironstone.Analyzers.CoapProfiling
                 CoapCode = first.CoapCode,
                 CoapType = first.CoapType,
                 CoapUriPath = first.CoapUriPath,
-                FlowOctets = arg.Sum(x => x.UdpLength),
+                FlowOctets = arg.Sum(x => x.PayloadLength),
                 FlowPackets = arg.Count()
             };
         }

@@ -14,11 +14,11 @@
     },
     "LearnProfile-Ide": {
       "commandName": "Project",
-      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\idle.csv -WriteTo=Profiles\\idle.profile -Aggregate=\"udp.srcport,udp.dstport\""
+      "commandLineArgs": "Learn-Profile -InputCsvFile=SampleData\\idle.csv -WriteTo=Profiles\\idle.profile -Aggregate=\"udp.srcport,udp.dstport\""
     },
     "LearnProfile-Regular": {
       "commandName": "Project",
-      "commandLineArgs": "Learn-Profile -InputFile=SampleData\\regular.csv -WriteTo=Profiles\\regular.profile -Aggregate=\"udp.srcport,udp.dstport\""
+      "commandLineArgs": "Learn-Profile -InputCapFile=SampleData\\regular.pcapng -WriteTo=Profiles\\regular.profile -Aggregate=\"udp.srcport,udp.dstport\""
     },
     "CreateTimeline": {
       "commandName": "Project",

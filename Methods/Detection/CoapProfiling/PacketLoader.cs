@@ -62,7 +62,7 @@ namespace Ironstone.Analyzers.CoapProfiling
                     IpDst = fields[2],
                     SrcPort = Int32.Parse(fields[3]),
                     DstPort = Int32.Parse(fields[4]),
-                    UdpLength = Int32.Parse(fields[5]),
+                    PayloadLength = Int32.Parse(fields[5]),
                     CoapCode = Int32.Parse(fields[6]),
                     CoapType = Int32.Parse(fields[7]),
                     CoapMessageId = Int32.Parse(fields[8]),

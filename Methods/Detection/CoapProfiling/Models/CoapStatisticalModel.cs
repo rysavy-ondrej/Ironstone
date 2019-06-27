@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 namespace Ironstone.Analyzers.CoapProfiling.Models
 {
     [Serializable]
-    class CoapStatisticalModel : IFlowModel
+    public class CoapStatisticalModel : IFlowModel
     {
         const double epsilon = 1e-6;
         string[] m_dimensions;

@@ -28,11 +28,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             public IFlowModel NewModel(string[] dimensions) => new CoapNeuralNetworkModel(dimensions);
         }
 
-        public static FlowProfile Create(Type typ, string[] dimensions, double windowSize)
+        public static FlowProfile Create(ProtocolFactory protocolFactory, FlowKey.Fields flowAggregation, Enum modelKey, Type typ, string[] dimensions, double windowSize)
         {
-            if (typ == typeof(CoapStatisticalModel)) return new FlowProfile(dimensions, windowSize, new StatisticalModelFactory());
-            if (typ == typeof(CoapMixtureModel)) return new FlowProfile(dimensions, windowSize, new CoapMixtureModelFactory());
-            if (typ == typeof(CoapStatisticalFingerprint)) return new FlowProfile(dimensions, windowSize,new CoapStatisticalFingerprintFactory());
+            if (typ == typeof(CoapStatisticalModel)) return new FlowProfile(protocolFactory,dimensions, windowSize, flowAggregation, modelKey, new StatisticalModelFactory());
+            if (typ == typeof(CoapMixtureModel)) return new FlowProfile(protocolFactory,dimensions, windowSize, flowAggregation, modelKey, new CoapMixtureModelFactory());
+            if (typ == typeof(CoapStatisticalFingerprint)) return new FlowProfile(protocolFactory,dimensions, windowSize, flowAggregation, modelKey, new CoapStatisticalFingerprintFactory());
             return null;
         }
     }

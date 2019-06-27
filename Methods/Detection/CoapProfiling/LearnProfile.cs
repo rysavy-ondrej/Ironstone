@@ -1,53 +1,45 @@
-﻿using System;
+﻿using Ironstone.Analyzers.CoapProfiling.Models;
+using Konsole;
+using Microsoft.Extensions.CommandLineUtils;
+using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
-using ConsoleTableExt;
-using CsvHelper;
-using Ironstone.Analyzers.CoapProfiling.Models;
-using Microsoft.Extensions.CommandLineUtils;
-using ShellProgressBar;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
 
 
 
-    internal struct LearningWindow
-    {
-        public enum ValueType { Absolute, Ratio };
-        public ValueType Meassure { get; set; }
-        public double Value { get; set; }   
-        public static LearningWindow Parse(string input)
-        {
-            var str = input.Trim();
-            if (str.EndsWith('%'))
-            {
-                double.Parse(str.TrimEnd('%'));
-                return new LearningWindow
-                {
-                    Meassure = ValueType.Ratio,
-                    Value = double.Parse(str.TrimEnd('%')) / 100.0
-                };
-            }
-            else
-            {
-                return new LearningWindow
-                {
-                    Meassure = ValueType.Absolute,
-                    Value = double.Parse(str)
-                };
-            }
-        }
-        public static LearningWindow All => new LearningWindow { Meassure = ValueType.Ratio, Value = 1.0 };
-    }
-
-    internal class LearnProfile : IDisposable
+    internal class LearnProfile
     {
         internal static readonly double DefaultWindowSize = 60.0;
+
+
+        struct Settings
+        {
+            public double WindowSize { get; internal set; }
+            public string Protocol { get; internal set; }
+            public string FlowAggregation { get; internal set; }
+            public string ModelKey { get; internal set; }
+            public string ModelClass { get; internal set; }
+            public LearningWindow WindowsCount { get; internal set; }
+            public FlowKey.Fields FlowAggregationFields => FieldHelper.Parse<FlowKey.Fields>(FlowAggregation, (x, y) => (x | y));
+
+            public Type ModelType
+            {
+                get
+                {
+                    var types = Assembly.GetExecutingAssembly().GetTypes(); // (ModelClass, true, true);
+                    var className = this.ModelClass;
+                    return types.FirstOrDefault(x => x.Name == className);
+                }
+            }
+
+        }
 
         public LearnProfile()
         {
@@ -59,8 +51,12 @@ namespace Ironstone.Analyzers.CoapProfiling
             command.Description = "Create CoAP profiles from the specific capture file.";
             command.HelpOption("-?|-Help");
 
-            var readOption = command.Option("-InputFile <filename.csv>",
-                "A name of input file in csv format that contains decoded CoAP packets.",
+            var inputCsvOption = command.Option("-InputCsvFile <string>",
+                "A name of an input file in csv format that contains decoded CoAP packets.",
+                CommandOptionType.MultipleValue);
+
+            var inputCapOption = command.Option("-InputCapFile <string>",
+                "A name of an input file in cap format that contains CoAP packets.",
                 CommandOptionType.MultipleValue);
 
             var writeOption = command.Option("-WriteTo <filename>",
@@ -70,6 +66,10 @@ namespace Ironstone.Analyzers.CoapProfiling
             var windowSizeOption = command.Option("-WindowSize <double>",
                 "A size of windows in seconds.",
                 CommandOptionType.MultipleValue);
+
+            var protocolOption = command.Option("-Protocol <string>",
+                "Specifies the protocol to analyze. Supported protocolas are: coap, iec. Default is coap.",
+                CommandOptionType.SingleValue);
 
             var modelKeyOption = command.Option("-ModelKey <scheme>",
                 "Model key represents an aggregation scheme that is used to build individual flow models. It is usually drawn from the following values: 'coap.code', 'coap.type', 'coap.uri_path'. Default is  'coap.code,coap.type,coap.uri_path'.",
@@ -90,102 +90,108 @@ namespace Ironstone.Analyzers.CoapProfiling
 
             command.OnExecute(() =>
             {
-                var windowSize = windowSizeOption.HasValue() ? Double.Parse(windowSizeOption.Value()) : DefaultWindowSize;
-                var flowAggregation = aggregateOption.HasValue() ? FieldHelper.Parse<FlowKey.Fields>(aggregateOption.Value(), (x,y)=>(x|y)) : FlowKey.Fields.None;
-                var modelKey = modelKeyOption.HasValue() ? FieldHelper.Parse<CoapResourceAccess.Fields>(modelKeyOption.Value(), (x, y) => (x | y)) : CoapResourceAccess.Fields.CoapCode | CoapResourceAccess.Fields.CoapType | CoapResourceAccess.Fields.CoapUriPath;
-                var modelClassType = modelClassOption.HasValue() ? GetModelType(modelKeyOption.Value()) : typeof(CoapMixtureModel);
-                var windowsCount = windowsCountOption.HasValue() ? LearningWindow.Parse(windowsCountOption.Value()) : LearningWindow.All;
+                if (!writeOption.HasValue()) throw new CommandParsingException(command, $"{writeOption.ShortName} is required but was not provided!");
+                if (!(inputCsvOption.HasValue() || inputCapOption.HasValue())) throw new CommandParsingException(command, $"{inputCsvOption.ShortName} or {inputCapOption.ShortName} is required but was not provided!");
 
-                if (readOption.HasValue() && writeOption.HasValue())
+                var settings = new Settings
                 {
-                    CreateProgressBar();
-                    var profile = ProfileFactory.Create(modelClassType, new string[] { "Packets","Octets" }, windowSize);
-                    LoadAndCompute(profile, readOption.Value(), windowSize, windowsCount, modelKey, flowAggregation);
-                    StoreProfile(profile, writeOption.Value());
-                    return 0;
-                }
-                throw new CommandParsingException(command, $"Missing required arguments: {readOption.ShortName}, {writeOption.ShortName}.");
+                    WindowSize = windowSizeOption.HasValue() ? Double.Parse(windowSizeOption.Value()) : DefaultWindowSize,
+                    Protocol = protocolOption.HasValue() ? protocolOption.Value() : "coap",
+                    FlowAggregation = aggregateOption.HasValue() ? aggregateOption.Value() : String.Empty,
+                    ModelKey = modelKeyOption.HasValue() ? modelKeyOption.Value() : String.Empty,
+                    ModelClass = modelClassOption.HasValue()? modelKeyOption.Value() : nameof(CoapStatisticalModel),
+                    WindowsCount = windowsCountOption.HasValue() ? LearningWindow.Parse(windowsCountOption.Value()) : LearningWindow.All
+                };
+
+                ProcessInput(inputCsvOption.Value(), inputCapOption.Value(), writeOption.Value(), settings);
+                return 0;
             });
         }
 
-        private Type GetModelType(string className)
+        private void ProcessInput(string inputCsvFile, string inputCapFile, string outputFile, Settings settings)
         {
-            return Assembly.GetExecutingAssembly().GetType(className, true, true);
-        }
 
-        ProgressBar progressBar; 
-        private void CreateProgressBar()
-        {
-            progressBar = new ProgressBar(0, String.Empty, new ProgressBarOptions
+            var flowAggregation = settings.FlowAggregationFields;
+            var protocolFactory = ProtocolFactory.Create(settings.Protocol);
+            var modelKey = protocolFactory.GetModelKeyFields(settings.ModelKey);
+
+            Console.WriteLine("IRONSTONE FLOW PROFILING: Learn Profile");
+            var profile = ProfileFactory.Create(protocolFactory, flowAggregation, modelKey, settings.ModelType, new string[] { "Packets", "Octets" }, settings.WindowSize);
+
+            if (File.Exists(inputCsvFile))
             {
-                ProgressCharacter = '-',
-            });
-        }
-        private void ResetProgressBar(int count, string message)
-        {
-            progressBar.Tick(0);
-            progressBar.MaxTicks = count;
-            progressBar.Message = message;
+                var packets = PacketLoader.LoadCoapPacketsFromCsv(inputCsvFile).ToList();
+                LoadAndCompute(profile, Path.GetFullPath(inputCsvFile), packets, settings.WindowSize, settings.WindowsCount, protocolFactory, modelKey, flowAggregation);
+            }
+            if (File.Exists(inputCapFile))
+            {
+                var packets = PacketLoader.LoadCoapPacketsFromCap(inputCapFile).ToList();
+                LoadAndCompute(profile, Path.GetFullPath(inputCapFile), packets, settings.WindowSize, settings.WindowsCount, protocolFactory, modelKey, flowAggregation);
+            }
+            StoreProfile(profile, outputFile);
         }
 
         private void StoreProfile(FlowProfile profile, string outputFile)
         {
+            var fullPath = Path.GetFullPath(outputFile);
+            var sw = new Stopwatch();
+            sw.Start();
+            Console.WriteLine("┌ Saving profile:");
             var formatter = new BinaryFormatter();
             using (var s = new FileStream(outputFile, FileMode.Create))
             {
                 formatter.Serialize(s, profile);
                 s.Close();
             }
+            Console.WriteLine($"├─ profile written to {fullPath}");
+            Console.WriteLine($"└ done [{sw.Elapsed}].");
         }
 
-        private void LoadAndCompute(FlowProfile profile, string inputFile, double windowSize, LearningWindow learningWindows, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None) 
+        private void LoadAndCompute(FlowProfile profile, string inputFile,  IList<CoapPacketRecord> packets, double windowSize, LearningWindow learningWindows, 
+            ProtocolFactory protocolFactory, Enum modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None) 
         {
             var getFlowKeyFunc = FlowKey.GetFlowKeyFunc(flowAggregation);
-            var getModelKeyFunc = CoapResourceAccess.GetModelKeyFunc(modelKey);
-            ResetProgressBar(0, $"Loading source packets...");
-            using (var reader = new StreamReader(inputFile))
-            using (var csv = new CsvReader(reader))
+            var getModelKeyFunc = protocolFactory.GetModelKeyFunc(modelKey);
+            Console.WriteLine ("┌ Load packets and compute profile:");
+            Console.WriteLine($"├─ input file: {inputFile}");
+            Console.WriteLine($"├─ packets count: {packets.Count}");
+            Console.WriteLine($"├─ window size: {windowSize} seconds");
+            Console.WriteLine($"├─ learning window: {learningWindows.Meassure}({learningWindows.Value})");
+            Console.WriteLine($"├─ protocol: {protocolFactory.Name}");
+            Console.WriteLine($"├─ model key: {modelKey}");
+            Console.WriteLine($"├─ flow aggregation: {flowAggregation}");
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var startTime = packets.First().TimeEpoch;
+            var packetBins = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize)).ToList();
+
+            var learningBins = learningWindows.Meassure == LearningWindow.ValueType.Absolute ? packetBins.Take((int)learningWindows.Value) :
+                packetBins.Take((int)(packetBins.Count() * learningWindows.Value));
+            var pb1 = new ProgressBar(packetBins.Count());
+            foreach (var group in packetBins)
             {
-                csv.Configuration.PrepareHeaderForMatch = (string header, int index) => header.Trim();
-                csv.Configuration.MissingFieldFound = null;
-                csv.Configuration.HeaderValidated = null;
-                var packets = csv.GetRecords<CoapPacketRecord>().ToList();
-                var startTime = packets.First().TimeEpoch;
-                var packetBins = packets.GroupBy(p => (int)Math.Floor((p.TimeEpoch - startTime) / windowSize)).ToList();
-
-                var learningBins = learningWindows.Meassure == LearningWindow.ValueType.Absolute ? packetBins.Take((int)learningWindows.Value) :
-                    packetBins.Take((int)(packetBins.Count() * learningWindows.Value));
-
-                ResetProgressBar(packetBins.Count(), $"Processing bins...");
-                foreach (var group in packetBins)
-                {
-                    progressBar.Tick();
-                    var flows = CoapFlowRecord.CollectCoapFlows(group, getModelKeyFunc, getFlowKeyFunc);
-                    ComputeProfile(profile, flows);
-                }
+                pb1.Next($"├─ processing bin {group.Key}: {group.Count()} items");
+                var flows = protocolFactory.CollectCoapFlows(group, getModelKeyFunc, getFlowKeyFunc);
+                ComputeProfile(profile, flows);
             }
-            ResetProgressBar(profile.Count, $"Fitting models...");
-            profile.Commit(() => progressBar.Tick());
+            var pb2 = new ProgressBar(profile.Count);
+            profile.Commit(() => pb2.Next($"├─ fitting models"));
+            Console.WriteLine($"└ done [{sw.Elapsed}].");
         }
 
-        private static void ComputeProfile(FlowProfile profile, IEnumerable<CoapFlowRecord> flows) 
+        private static void ComputeProfile(FlowProfile profile, IEnumerable<IFlowRecord> flows) 
         {
             foreach (var flow in flows)
             {
-                var coapObject = flow.CoapObject.ToString();
-                if (!profile.TryGetValue(coapObject, out var model))
+                var modelObject = flow.Model.ToString();
+                if (!profile.TryGetValue(modelObject, out var model))
                 {
                     model = profile.NewModel();
-                    profile[coapObject] = model;
+                    profile[modelObject] = model;
                 }
                 model.Samples.Add(new double[] { flow.FlowPackets, flow.FlowOctets });
             }
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)progressBar).Dispose();
-            
         }
     }
 }
