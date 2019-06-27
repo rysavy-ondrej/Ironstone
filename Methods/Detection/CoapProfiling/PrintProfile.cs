@@ -43,7 +43,7 @@ namespace Ironstone.Analyzers.CoapProfiling
         /// Prints PDF of all models as CSV suitable for visualization. 
         /// </summary>
         /// <param name="profile"></param>
-        private void DumpPdf(CoapProfile profile)
+        private void DumpPdf(FlowProfile profile)
         {
             foreach(var model in profile)
             {
@@ -64,11 +64,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
         }
 
-        internal static CoapProfile LoadProfile(string fileName) 
+        internal static FlowProfile LoadProfile(string fileName) 
         {
             IFormatter formatter = new BinaryFormatter();
             var s = new FileStream(fileName, FileMode.Open);
-            var pm = (CoapProfile)formatter.Deserialize(s);
+            var pm = (FlowProfile)formatter.Deserialize(s);
             return pm;
         }
 

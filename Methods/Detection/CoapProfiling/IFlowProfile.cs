@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-    public interface ICoapModel : ISerializable
+    public interface IFlowModel : ISerializable
     {
         List<double[]> Samples { get; }
         double Threshold { get; }
@@ -14,8 +14,8 @@ namespace Ironstone.Analyzers.CoapProfiling
     }
 
 
-    public interface ICoapModelFactory 
+    public interface IFlowModelFactory 
     {
-        ICoapModel NewModel(string[] dimensions);
+        IFlowModel NewModel(string[] dimensions);
     }
 }

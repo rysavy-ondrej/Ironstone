@@ -7,7 +7,7 @@ using System.Data;
 using System.Linq;
 namespace Ironstone.Analyzers.CoapProfiling
 {
-    internal class CreateTimeline
+    public class CreateTimeline
     {
         public CreateTimeline()
         {
@@ -19,11 +19,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             command.HelpOption("-?|-Help");
 
             var inputCapOption = command.Option("-InputCapFile <string>",
-                "A name of an input file in cap format that contains CoAP packets.",
+                "A name of an input file in cap format that contains packets.",
                 CommandOptionType.MultipleValue);
 
             var aggregateOption = command.Option("-Selector <string>",
-                "Selector field used to calculate the timeline. It can be any combination of valid fields extracted from CoAP communication. The possible values are: ip.src, ip.dst, udp.srcport, udp.dstport, udp.length, coap.code, coap.type, coap.mid, coap.token, coap.opt.uri_path_recon",
+                "Selector field used to calculate the timeline. It can be any combination of valid fields extracted from the communication. The possible values are: ip.src, ip.dst, udp.srcport, udp.dstport, udp.length, coap.code, coap.type, coap.mid, coap.token, coap.opt.uri_path_recon",
                 CommandOptionType.SingleValue);
 
 
@@ -92,36 +92,17 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
         }
 
-        public static IEnumerable<IecAsduPacket> LoadIecPacketsFromCap(string inputFile)
-        {
-            var sharkProcess = new SharkProcess();
-            var items = sharkProcess.RunForFields(inputFile, "104asdu", "|", "frame.time_epoch", "ip.src", "ip.dst", "104asdu.causetx");
-            foreach (var item in items)
-            {
-                var fields = item.Split('|');
-                var ctxlist = fields[3].Split(',');
-                foreach (var ctx in ctxlist)
-                {
-                    yield return new IecAsduPacket
-                    {
-                        TimeEpoch = Double.Parse(fields[0]),
-                        IpSrc = fields[1],
-                        IpDst = fields[2],
-                        Causetx = Int32.Parse(ctx)
-                    };
-                }
-            }
-        }
+
 
         private void CreateTimelineForIec(string inputfile, int interval, string selector)
         {
-            var packets = LoadIecPacketsFromCap(inputfile).ToList();
+            var packets = PacketLoader.LoadIecPacketsFromCap(inputfile).ToList();
             CreateTimelineForPackets<IecAsduPacket>(packets, interval, x => x.Cot, x => x.TimeEpoch);
         }
 
         private void CreateTimelineForCoap(string inputfile, int interval, string selector)
         {
-            var packets = InputLoader.LoadCoapPacketsFromCap(inputfile).ToList();
+            var packets = PacketLoader.LoadCoapPacketsFromCap(inputfile).ToList();
             CreateTimelineForPackets<CoapPacketRecord>(packets, interval, x => x.CoapUriPath, x=>x.TimeEpoch);
         }
 

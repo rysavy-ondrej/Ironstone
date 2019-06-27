@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 
-namespace Ironstone.Analyzers.CoapProfiling
+namespace Ironstone.Analyzers.CoapProfiling.Models
 {
     [Serializable]
-    class CoapStatisticalModel : ICoapModel
+    class CoapStatisticalModel : IFlowModel
     {
         const double epsilon = 1e-6;
         string[] m_dimensions;

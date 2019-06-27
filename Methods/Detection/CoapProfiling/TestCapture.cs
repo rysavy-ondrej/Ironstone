@@ -1,60 +1,12 @@
-﻿using System;
+﻿using ConsoleTableExt;
+using Microsoft.Extensions.CommandLineUtils;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
 using System.Linq;
-using ConsoleTableExt;
-using CsvHelper;
-using Ironstone.Analyzers.TSharkNet;
-using Microsoft.Extensions.CommandLineUtils;
 
 namespace Ironstone.Analyzers.CoapProfiling
 {
-
-    class InputLoader
-    {
-        public static IEnumerable<CoapPacketRecord> LoadCoapPacketsFromCsv(string inputFile)
-        {
-
-            using (var reader = new StreamReader(inputFile))
-            using (var csv = new CsvReader(reader))
-            {
-                csv.Configuration.PrepareHeaderForMatch = (string header, int index) => header.Trim();
-                csv.Configuration.MissingFieldFound = null;
-                csv.Configuration.HeaderValidated = null;
-                var packets = csv.GetRecords<CoapPacketRecord>().ToList();
-                return packets;
-            }
-        }
-
-        // tshark -T fields -e frame.time_epoch -e ip.src -e ip.dst -e udp.srcport -e udp.dstport -e udp.length -e coap.code -e coap.type -e coap.mid -e coap.token -e coap.opt.uri_path_recon -E header=y -E separator=, -Y "coap && !icmp" -r <INPUT>  > <OUTPUT-CSV-FILE>
-
-        public static IEnumerable<CoapPacketRecord> LoadCoapPacketsFromCap(string inputFile)
-        {
-            var sharkProcess = new SharkProcess();
-            var items = sharkProcess.RunForFields(inputFile, "coap && !icmp", ",", "frame.time_epoch", "ip.src", "ip.dst", "udp.srcport", "udp.dstport", "udp.length", "coap.code", "coap.type", "coap.mid", "coap.token", "coap.opt.uri_path_recon");
-            foreach (var item in items)
-            {
-                var fields = item.Split(',');
-
-                yield return new CoapPacketRecord
-                {
-                    TimeEpoch = Double.Parse(fields[0]),
-                    IpSrc = fields[1],
-                    IpDst = fields[2],
-                    SrcPort = Int32.Parse(fields[3]),
-                    DstPort = Int32.Parse(fields[4]),
-                    UdpLength = Int32.Parse(fields[5]),
-                    CoapCode = Int32.Parse(fields[6]),
-                    CoapType = Int32.Parse(fields[7]),
-                    CoapMessageId = Int32.Parse(fields[8]),
-                    CoapToken = fields[9],
-                    CoapUriPath = fields[10]
-                };
-            }
-        }
-    }
-
     internal class TestCapture
     {
         internal static readonly double DefaultWindowSize = 60.0;
@@ -105,12 +57,12 @@ namespace Ironstone.Analyzers.CoapProfiling
                     profile.ThresholdMultiplier = thresholdMultiplier;
                     if (inputCsvOption.HasValue())
                     {
-                        var packets = InputLoader.LoadCoapPacketsFromCsv(inputCsvOption.Value());
+                        var packets = PacketLoader.LoadCoapPacketsFromCsv(inputCsvOption.Value());
                         LoadAndTest(profile, packets , windowSize, modelKey, flowAggregation);
                     }
                     if (inputCapOption.HasValue())
                     {
-                        var packets = InputLoader.LoadCoapPacketsFromCap(inputCapOption.Value());
+                        var packets = PacketLoader.LoadCoapPacketsFromCap(inputCapOption.Value());
                         LoadAndTest(profile, packets, windowSize, modelKey, flowAggregation);
                     }
                     return 0;
@@ -119,11 +71,11 @@ namespace Ironstone.Analyzers.CoapProfiling
             });
         }
 
-        private CoapProfile MergeProfiles(List<CoapProfile> profiles)
+        private FlowProfile MergeProfiles(List<FlowProfile> profiles)
         {
             var first = profiles.First();
 
-            var profile = new CoapProfile(first.Dimensions, first.WindowSize, first.ModelBuilder);
+            var profile = new FlowProfile(first.Dimensions, first.WindowSize, first.ModelBuilder);
             var targets = profiles.SelectMany(p => p.Items).GroupBy(m => m.Key);
             foreach(var target in targets)
             {
@@ -140,7 +92,7 @@ namespace Ironstone.Analyzers.CoapProfiling
 
        
 
-        private void LoadAndTest(CoapProfile profile, IEnumerable<CoapPacketRecord> packets, double windowSize, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None)
+        private void LoadAndTest(FlowProfile profile, IEnumerable<CoapPacketRecord> packets, double windowSize, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None)
         {
             var getFlowKeyFunc = FlowKey.GetFlowKeyFunc(flowAggregation);
             var getModelKeyFunc = CoapResourceAccess.GetModelKeyFunc(modelKey);
@@ -173,7 +125,7 @@ namespace Ironstone.Analyzers.CoapProfiling
 
         }
 
-        private (int Normal, int Abnormal, int Unknown) TestAndPrint(CoapProfile profile, IEnumerable<CoapFlowRecord> flows, string label = "") 
+        private (int Normal, int Abnormal, int Unknown) TestAndPrint(FlowProfile profile, IEnumerable<CoapFlowRecord> flows, string label = "") 
         {
             var normalCount = 0;
             var abnormalCount = 0;

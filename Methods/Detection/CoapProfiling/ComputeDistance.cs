@@ -30,7 +30,7 @@ namespace Ironstone.Analyzers.CoapProfiling
         }
 
 
-        private void ComputeDistances(CoapProfile profile1, CoapProfile profile2)
+        private void ComputeDistances(FlowProfile profile1, FlowProfile profile2)
         {
             var measuresTable = new DataTable();
             measuresTable.Columns.Add("Target", typeof(string));

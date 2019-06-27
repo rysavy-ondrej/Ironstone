@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using ConsoleTableExt;
 using CsvHelper;
+using Ironstone.Analyzers.CoapProfiling.Models;
 using Microsoft.Extensions.CommandLineUtils;
 using ShellProgressBar;
 
@@ -127,7 +128,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             progressBar.Message = message;
         }
 
-        private void StoreProfile(CoapProfile profile, string outputFile)
+        private void StoreProfile(FlowProfile profile, string outputFile)
         {
             var formatter = new BinaryFormatter();
             using (var s = new FileStream(outputFile, FileMode.Create))
@@ -137,7 +138,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             }
         }
 
-        private void LoadAndCompute(CoapProfile profile, string inputFile, double windowSize, LearningWindow learningWindows, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None) 
+        private void LoadAndCompute(FlowProfile profile, string inputFile, double windowSize, LearningWindow learningWindows, CoapResourceAccess.Fields modelKey, FlowKey.Fields flowAggregation = FlowKey.Fields.None) 
         {
             var getFlowKeyFunc = FlowKey.GetFlowKeyFunc(flowAggregation);
             var getModelKeyFunc = CoapResourceAccess.GetModelKeyFunc(modelKey);
@@ -167,7 +168,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             profile.Commit(() => progressBar.Tick());
         }
 
-        private static void ComputeProfile(CoapProfile profile, IEnumerable<CoapFlowRecord> flows) 
+        private static void ComputeProfile(FlowProfile profile, IEnumerable<CoapFlowRecord> flows) 
         {
             foreach (var flow in flows)
             {

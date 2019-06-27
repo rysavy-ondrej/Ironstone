@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 
-namespace Ironstone.Analyzers.CoapProfiling
+namespace Ironstone.Analyzers.CoapProfiling.Models
 {
     [Serializable]
-    class CoapStatisticalFingerprint : ICoapModel
+    class CoapStatisticalFingerprint : IFlowModel
     {
         const double epsilon = 0.001;
         const double Amax = 1 / epsilon;
