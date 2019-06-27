@@ -6,7 +6,7 @@
     },
     "TestCapture": {
       "commandName": "Project",
-      "commandLineArgs": "Test-Capture -InputFile=SampleData\\regular.csv -ProfileFile=Profiles\\regular.profile > Dumps\\regular.test"
+      "commandLineArgs": "Test-Capture -InputCapFile=SampleData\\regular.pcapng -ProfileFile=Profiles\\regular.profile > Dumps\\regular.test"
     },
     "MergeProfiles": {
       "commandName": "Project",
@@ -19,6 +19,10 @@
     "LearnProfile-Regular": {
       "commandName": "Project",
       "commandLineArgs": "Learn-Profile -InputFile=SampleData\\regular.csv -WriteTo=Profiles\\regular.profile -Aggregate=\"udp.srcport,udp.dstport\""
+    },
+    "CreateTimeline": {
+      "commandName": "Project",
+      "commandLineArgs": "Create-Timeline -InputCapFile=SampleData\\iec104.pcap -Protocol=iec -Interval=1 > Dumps\\iec.timeline.md"
     }
   }
 }
