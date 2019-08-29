@@ -1,1 +1,0 @@
-# Detection Method Case studies
