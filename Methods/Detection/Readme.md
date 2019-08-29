@@ -1,4 +1,5 @@
 # Detection Methods Case Studies
 
-[Coap Anomaly Detection](CaseStudy1.md)
-[DNS Detection](CaseStudy1.md)
+* [Coap Anomaly Detection](CaseStudy1.md):  This case study aims to demonstrate the security issues of IoT environment and to show how anomaly behavior can be detected by application of AI methods.
+
+* [DNS Detection](CaseStudy1.md): 
