@@ -9,8 +9,8 @@ The sample data set represents monitoring and control data transmission between 
 
 | File | Packets | Flows | Resources | Normal |
 |---|---|---|---|---|
-|[idle.cap](./CoapProfiling/SampleData/idle.pcapng)       | 25 096   | 716     |  5     |   yes |
-|regular.cap  | 54 634   | 1 307  | 12   |   yes  |
-|observe.cap | 17 480   | 415    |  8     |   yes  |  
-|attack.cap   | 38 474    | 870     |  8     |  no  | 
+| [idle.pcapng](./CoapProfiling/SampleData/idle.pcapng)       | 25 096   | 716     |  5     |   yes |
+| [regular.pcapng](./CoapProfiling/SampleData/regular.pcapng)  | 54 634   | 1 307  | 12   |   yes  |
+| [observe.pcapng](./CoapProfiling/SampleData/observe.pcapng) | 17 480   | 415    |  8     |   yes  |  
+| [attack.pcapng](./CoapProfiling/SampleData/attack.pcapng)   | 38 474    | 870     |  8     |  no  | 
 
