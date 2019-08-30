@@ -23,7 +23,7 @@ The first argument is a CSV file representing CoAP communication, which is used 
 The tool will write the computed profile to the output file specified as the second argument.  
 
 ```
-dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Learn-Profile -InputCsvFile=SampleData\coap-learn.csv -WriteTo=Profiles\coap.profile
+dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Learn-Profile -InputCsvFile=SampleData\regular.csv -WriteTo=Profiles\regular.profile
 ```
 
 
@@ -32,7 +32,7 @@ dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Learn-Profile -InputCsvFile=Sam
 Once we have a profile created from the representative samples of CoAP communication, we can use this profile to classify the CoAP flows. The profile is stored in the binary file, which the tool loads and uses to discriminate the input CSV file.  To use the tool in the classification mode, execute it with `Test-Capture` command.
 
 ```
-dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Test-Capture -ProfileFile=Profiles\coap.profile -InputCsvFile=SampleData\idle.csv
+dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Test-Capture -ProfileFile=Profiles\regular.profile -InputCsvFile=SampleData\idle.csv
 ```
 The tool prints the output table for each time window. The table consists of flows each occupying a single row. For each flow, a score is computed. Depending on the calculated score and the corresponding model threshold value the flow is classified. 
 
