@@ -24,6 +24,7 @@ namespace Ironstone.Analyzers.CoapProfiling
             var readOption = command.Option("-InputFile <filename.profile>",
                         "A name of input file containing the serialized profiles.",
                         CommandOptionType.MultipleValue);
+            var printPdf = command.Option("-PrintPdf", "Prints PDF of all models as CSV suitable for visualization.", CommandOptionType.NoValue);
 
             command.OnExecute(() =>
             {
@@ -31,8 +32,10 @@ namespace Ironstone.Analyzers.CoapProfiling
                 {
                     var profile = LoadProfile(readOption.Value());
                     profile.Dump(Console.Out);
-
-                    DumpPdf(profile);
+                    if (printPdf.HasValue())
+                    { 
+                        DumpPdf(profile);
+                    }
                     return 0;
                 }
                 throw new CommandParsingException(command, $"Missing required argument {readOption.ShortName}.");

@@ -34,38 +34,31 @@ Once we have a profile created from the representative samples of CoAP communica
 ```
 dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Test-Capture -ProfileFile=Profiles\regular.profile -InputCsvFile=SampleData\idle.csv
 ```
-The tool prints the output table for each time window. The table consists of flows each occupying a single row. For each flow, a score is computed. Depending on the calculated score and the corresponding model threshold value the flow is classified. 
+The tool prints the output table for each time window. The table consists of flows each occupying a single row. For each flow, a score is computed. The score 
+is a value in the interval (0,1) that represents how close is the given flow to the correspondent model in the profile. 
+Depending on the calculated score and the corresponding model threshold value the flow is classified. 
 
-```
-2/28/2019 8:07:19 PM:
-| CoAP Flow                                                               | Packets | Octets | Score                | Threshold           | Anomaly |
-|-------------------------------------------------------------------------|---------|--------|----------------------|---------------------|---------|
-| 192.168.10.107.47702->192.168.10.104.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.104.5683->192.168.10.107.47702 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-| 192.168.10.107.51568->192.168.10.105.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.105.5683->192.168.10.107.51568 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-| 192.168.10.105.36107->192.168.10.107.5683 0.03(Put)[CON]:/floor_1_light | 1       | 37     | 0                    | 0.00102299796251294 | False   |
-| 192.168.10.107.5683->192.168.10.105.36107 2.04(Changed)[ACK]:           | 1       | 12     | 0                    | 0.153358540710201   | False   |
-| 192.168.10.107.47860->192.168.10.104.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.104.5683->192.168.10.107.47860 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-| 192.168.10.107.57145->192.168.10.105.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.105.5683->192.168.10.107.57145 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-| 192.168.10.107.53766->192.168.10.104.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.104.5683->192.168.10.107.53766 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-| 192.168.10.107.60717->192.168.10.105.5683 2.05(Content)[CON]:           | 1       | 12     | 0                    | 0.163445422090833   | False   |
-| 192.168.10.105.5683->192.168.10.107.60717 0.00(Empty)[ACK]:             | 1       | 12     | 0                    | 0.163441696336995   | False   |
-```
+
+2/27/2019 4:55:16 PM:
+| CoAP Flow                                                              | Packets | Octets | Score             | Threshold         | Label    |
+|------------------------------------------------------------------------|---------|--------|-------------------|-------------------|----------|
+| 192.168.10.102.57850>192.168.10.105.5683 2.05(Content)[CON]:           | 1       | 12     | 1                 | 0.996419294974079 | normal   |
+| 192.168.10.105.5683>192.168.10.102.57850 0.00(Empty)[ACK]:             | 1       | 12     | 1                 | 0.99642306201077  | normal   |
+| 192.168.10.105.51788>192.168.10.102.5683 0.03(Put)[CON]:/floor_1_light | 1       | 37     | 0.765936483549005 | 0.745160923237531 | normal   |
+| 192.168.10.102.5683>192.168.10.105.51788 2.04(Changed)[ACK]:           | 1       | 12     | 1                 | 0.999352792623254 | normal   |
+| 192.168.10.102.38448>192.168.10.104.5683 2.05(Content)[CON]:           | 1       | 12     | 1                 | 0.996419294974079 | normal   |
+
 
 ### Print the profile
 The profile is stored in a binary file. To print all models contained in the profile use `Print-Profile` command:
 
 ```
-dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Print-Profile -InputFile=Profiles\coap.profile
+dotnet Bin\Ironstone.Analyzers.CoapProfiling.dll Print-Profile -InputFile=Profiles\regular.profile
 ```
 
 The output has a form of the table that gives us an overview of created models. The content of the table for sample data is as follows:
 
-```
+
 | Name                          | Observations | Threshold           | Distributions(Packets,Octets) | Mean(Packets,Octets)              | Variance(Packets,Octets)                |
 |-------------------------------|--------------|---------------------|-------------------------------|-----------------------------------|-----------------------------------------|
 | 2.05(Content)[CON]:           | 10640        | 0.163445422090833   | Fn(x; S),Fn(x; S)             | 1.0015037593985,12.018045112782   | 0.00150163923767492,0.21623605022515    |
@@ -73,7 +66,7 @@ The output has a form of the table that gives us an overview of created models. 
 | 0.03(Put)[CON]:/floor_1_light | 957          | 0.00102299796251294 | Fn(x; S),Fn(x; S)             | 1,37.4994775339603                | 0,0.250261233019855                     |
 | 2.04(Changed)[ACK]:           | 1891         | 0.153358540710201   | Fn(x; S),Fn(x; S)             | 1.00052882072977,12.0063458487573 | 0.000528820729772643,0.0761501850872505 |
 | 0.03(Put)[CON]:/floor_1_temp  | 935          | 0.177554014211856   | Fn(x; S),Fn(x; S)             | 1.00106951871658,29.0310160427807 | 0.00106951871657757,0.899465240641688   |
-```
+
 
 The first column lists names of all models. A model is computed for every observed CoAP resource operation. The second column tells us how many flows were used to compute each model. The third column contains threshold values used to evaluate computed scores. The rest columns provide various information on models.
 
