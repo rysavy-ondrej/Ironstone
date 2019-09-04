@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
-
+using System.Runtime.InteropServices;
 namespace Ironstone.Analyzers.CoapProfiling
 {
 
@@ -168,15 +168,18 @@ namespace Ironstone.Analyzers.CoapProfiling
 
             var learningBins = learningWindows.Meassure == LearningWindow.ValueType.Absolute ? packetBins.Take((int)learningWindows.Value) :
                 packetBins.Take((int)(packetBins.Count() * learningWindows.Value));
-            var pb1 = new ProgressBar(packetBins.Count());
+
+           
+
+            var pb1 = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ?  new ProgressBar(packetBins.Count()) : null;
             foreach (var group in packetBins)
             {
-                pb1.Next($"├─ processing bin {group.Key}: {group.Count()} items");
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) pb1.Next($"├─ processing bin {group.Key}: {group.Count()} items");
                 var flows = protocolFactory.CollectCoapFlows(group, getModelKeyFunc, getFlowKeyFunc);
                 ComputeProfile(profile, flows);
             }
-            var pb2 = new ProgressBar(profile.Count);
-            profile.Commit(() => pb2.Next($"├─ fitting models"));
+            var pb2 = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new ProgressBar(profile.Count) : null;
+            profile.Commit(() => { if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) pb2.Next($"├─ fitting models");});
             Console.WriteLine($"└ done [{sw.Elapsed}].");
         }
 

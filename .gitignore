@@ -156,3 +156,5 @@ Methods/Detection/CoapProfiling/bin/Debug/netcoreapp2.2/SampleData/attack.pcapng
 Methods/Detection/.vs/Detection/v16/.suo
 Methods/Detection/.vs/Detection/DesignTimeBuild/.dtbcache
 Methods/Detection/CoapProfiling/CoapProfiling.csproj.user
+*.testlog
+*.manifest

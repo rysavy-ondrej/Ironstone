@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,6 +6,8 @@
     <AssemblyName>Ironstone.Analyzers.CoapProfiling</AssemblyName>
     <RootNamespace>Ironstone.Analyzers.CoapProfiling</RootNamespace>
     <LangVersion>7.3</LangVersion>
+    <ApplicationIcon />
+    <StartupObject>Ironstone.Analyzers.CoapProfiling.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

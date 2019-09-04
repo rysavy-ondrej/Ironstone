@@ -13,7 +13,7 @@ namespace Ironstone.Analyzers.CoapProfiling
     {
         public void Configuration(CommandLineApplication command)
         {
-            command.Description = "Computes the distance between historogrmas of two CoAP profiles using Bhattacharyya method.";
+            command.Description = "Computes the distance between historograms of two CoAP profiles using Bhattacharyya method.";
             command.HelpOption("-?|-Help");
 
             var profileOption = command.Option("-ProfileFile <string>",
