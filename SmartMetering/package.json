@@ -9,7 +9,7 @@
   "dependencies": {
     "@types/node": "^9.4.0",
     "@types/yargs": "^10.0.1",
-    "async": "^2.6.0",
+    "async": "^2.6.4",
     "fast-csv": "^2.4.1",
     "jshint": "^2.9.5",
     "lwm2m-node-lib": "*",
